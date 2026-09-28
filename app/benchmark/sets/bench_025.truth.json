@@ -1,0 +1,423 @@
+{
+  "set_name": "bench_025",
+  "units": "metric",
+  "pages": [
+    {
+      "index": 0,
+      "sheet_number": "A-101",
+      "page_type": "floor_plan",
+      "scale_ratio": 50,
+      "floor": "GROUND FLOOR",
+      "rotation": 90
+    },
+    {
+      "index": 1,
+      "sheet_number": "A-601",
+      "page_type": "opening_schedule",
+      "scale_ratio": null,
+      "floor": null,
+      "rotation": 0
+    }
+  ],
+  "instances": [
+    {
+      "type_key": "D3",
+      "tag": "D3",
+      "kind": "door",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        375.87396240234375,
+        217.70079040527344,
+        388.913330078125,
+        269.8582763671875
+      ],
+      "width_dim_text": "920",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "D2",
+      "tag": "D2",
+      "kind": "door",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        375.87396240234375,
+        357.7322692871094,
+        388.913330078125,
+        404.220458984375
+      ],
+      "width_dim_text": null,
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W4",
+      "tag": "W4",
+      "kind": "sliding_window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        375.87396240234375,
+        506.83465576171875,
+        388.913330078125,
+        608.8818969726562
+      ],
+      "width_dim_text": null,
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "DD1",
+      "tag": "D4",
+      "kind": "double_door",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        375.87396240234375,
+        697.8897705078125,
+        388.913330078125,
+        799.93701171875
+      ],
+      "width_dim_text": "1800",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "D2",
+      "tag": "D2",
+      "kind": "door",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        964.913330078125,
+        219.40158081054688,
+        977.9527587890625,
+        265.8897705078125
+      ],
+      "width_dim_text": "820",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "D2",
+      "tag": "D2",
+      "kind": "door",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        964.913330078125,
+        319.7480163574219,
+        977.9527587890625,
+        366.2362060546875
+      ],
+      "width_dim_text": null,
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W1",
+      "tag": "W1",
+      "kind": "window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        964.913330078125,
+        506.83465576171875,
+        977.9527587890625,
+        591.8740234375
+      ],
+      "width_dim_text": "1500",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W5",
+      "tag": "W5",
+      "kind": "window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        964.913330078125,
+        691.653564453125,
+        977.9527587890625,
+        810.7086791992188
+      ],
+      "width_dim_text": "2100",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W3",
+      "tag": "W3",
+      "kind": "window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        418.9605712890625,
+        170.0787353515625,
+        521.0078125,
+        183.11810302734375
+      ],
+      "width_dim_text": "1800",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W3",
+      "tag": "W3",
+      "kind": "window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        642.3306884765625,
+        170.0787353515625,
+        744.3779296875,
+        183.11810302734375
+      ],
+      "width_dim_text": "1800",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W4",
+      "tag": "W4",
+      "kind": "sliding_window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        433.70074462890625,
+        841.3228149414062,
+        535.7479858398438,
+        854.3621826171875
+      ],
+      "width_dim_text": null,
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W2",
+      "tag": "W2",
+      "kind": "window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        644.598388671875,
+        841.3228149414062,
+        746.6456298828125,
+        854.3621826171875
+      ],
+      "width_dim_text": "1800",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W4",
+      "tag": "W4",
+      "kind": "sliding_window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        790.8660888671875,
+        841.3228149414062,
+        892.913330078125,
+        854.3621826171875
+      ],
+      "width_dim_text": "1800",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "D2",
+      "tag": "D2",
+      "kind": "door",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        475.08660888671875,
+        481.03936767578125,
+        521.5747680664062,
+        487.2756042480469
+      ],
+      "width_dim_text": "820",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "D1",
+      "tag": "D1",
+      "kind": "door",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        881.0078125,
+        481.03936767578125,
+        930.3306884765625,
+        487.2756042480469
+      ],
+      "width_dim_text": null,
+      "counted": true,
+      "dup_tag": false
+    }
+  ],
+  "references": [],
+  "types": [
+    {
+      "type_key": "W1",
+      "tag": "W1",
+      "kind": "window",
+      "width_mm": 1500,
+      "height_mm": 600,
+      "width_status": "explicit",
+      "width_expected": 1500,
+      "height_status": "missing",
+      "height_expected": null,
+      "quantity": 1,
+      "schedule_quantity": null,
+      "in_schedule": false,
+      "expected_flags": [
+        "missing_height"
+      ]
+    },
+    {
+      "type_key": "W2",
+      "tag": "W2",
+      "kind": "window",
+      "width_mm": 1800,
+      "height_mm": 900,
+      "width_status": "explicit",
+      "width_expected": 1800,
+      "height_status": "explicit",
+      "height_expected": 900,
+      "quantity": 1,
+      "schedule_quantity": 1,
+      "in_schedule": true,
+      "expected_flags": []
+    },
+    {
+      "type_key": "W3",
+      "tag": "W3",
+      "kind": "window",
+      "width_mm": 1800,
+      "height_mm": 1200,
+      "width_status": "explicit",
+      "width_expected": 1800,
+      "height_status": "missing",
+      "height_expected": null,
+      "quantity": 2,
+      "schedule_quantity": null,
+      "in_schedule": false,
+      "expected_flags": [
+        "missing_height"
+      ]
+    },
+    {
+      "type_key": "W4",
+      "tag": "W4",
+      "kind": "sliding_window",
+      "width_mm": 1800,
+      "height_mm": 1500,
+      "width_status": "explicit",
+      "width_expected": 1800,
+      "height_status": "explicit",
+      "height_expected": 1500,
+      "quantity": 3,
+      "schedule_quantity": 3,
+      "in_schedule": true,
+      "expected_flags": []
+    },
+    {
+      "type_key": "W5",
+      "tag": "W5",
+      "kind": "window",
+      "width_mm": 2100,
+      "height_mm": 600,
+      "width_status": "explicit",
+      "width_expected": 2100,
+      "height_status": "explicit",
+      "height_expected": 600,
+      "quantity": 1,
+      "schedule_quantity": 1,
+      "in_schedule": true,
+      "expected_flags": []
+    },
+    {
+      "type_key": "D1",
+      "tag": "D1",
+      "kind": "door",
+      "width_mm": 870,
+      "height_mm": 2040,
+      "width_status": "explicit",
+      "width_expected": 870,
+      "height_status": "explicit",
+      "height_expected": 2040,
+      "quantity": 1,
+      "schedule_quantity": 1,
+      "in_schedule": true,
+      "expected_flags": []
+    },
+    {
+      "type_key": "D2",
+      "tag": "D2",
+      "kind": "door",
+      "width_mm": 820,
+      "height_mm": 2340,
+      "width_status": "explicit",
+      "width_expected": 820,
+      "height_status": "explicit",
+      "height_expected": 2340,
+      "quantity": 4,
+      "schedule_quantity": 4,
+      "in_schedule": true,
+      "expected_flags": []
+    },
+    {
+      "type_key": "D3",
+      "tag": "D3",
+      "kind": "door",
+      "width_mm": 920,
+      "height_mm": 2040,
+      "width_status": "explicit",
+      "width_expected": 920,
+      "height_status": "explicit",
+      "height_expected": 2040,
+      "quantity": 1,
+      "schedule_quantity": 1,
+      "in_schedule": true,
+      "expected_flags": []
+    },
+    {
+      "type_key": "SD1",
+      "tag": "SD1",
+      "kind": "sliding_door",
+      "width_mm": 2400,
+      "height_mm": 2100,
+      "width_status": "explicit",
+      "width_expected": 2400,
+      "height_status": "explicit",
+      "height_expected": 2100,
+      "quantity": 0,
+      "schedule_quantity": 0,
+      "in_schedule": true,
+      "expected_flags": [
+        "schedule_only"
+      ]
+    },
+    {
+      "type_key": "DD1",
+      "tag": "D4",
+      "kind": "double_door",
+      "width_mm": 1800,
+      "height_mm": 2100,
+      "width_status": "explicit",
+      "width_expected": 1800,
+      "height_status": "explicit",
+      "height_expected": 2100,
+      "quantity": 1,
+      "schedule_quantity": 1,
+      "in_schedule": true,
+      "expected_flags": []
+    }
+  ]
+}

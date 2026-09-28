@@ -1,0 +1,732 @@
+{
+  "set_name": "bench_008",
+  "units": "imperial",
+  "pages": [
+    {
+      "index": 0,
+      "sheet_number": "A-101",
+      "page_type": "floor_plan",
+      "scale_ratio": 64,
+      "floor": "GROUND FLOOR",
+      "rotation": 0
+    },
+    {
+      "index": 1,
+      "sheet_number": "A-201",
+      "page_type": "elevation",
+      "scale_ratio": 64,
+      "floor": null,
+      "rotation": 0
+    },
+    {
+      "index": 2,
+      "sheet_number": "A-202",
+      "page_type": "elevation",
+      "scale_ratio": 64,
+      "floor": null,
+      "rotation": 0
+    },
+    {
+      "index": 3,
+      "sheet_number": "A-601",
+      "page_type": "opening_schedule",
+      "scale_ratio": null,
+      "floor": null,
+      "rotation": 0
+    }
+  ],
+  "instances": [
+    {
+      "type_key": "W4",
+      "tag": "W-4",
+      "kind": "window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        219.57874015748033,
+        649.0984251968505,
+        246.57874015748033,
+        660.3484251968505
+      ],
+      "width_dim_text": "2'-0\"",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "D1",
+      "tag": "D-1",
+      "kind": "door",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        321.95374015748035,
+        649.0984251968505,
+        362.4537401574803,
+        660.3484251968505
+      ],
+      "width_dim_text": null,
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "D1",
+      "tag": "D-1",
+      "kind": "door",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        464.8287401574803,
+        649.0984251968505,
+        505.3287401574803,
+        660.3484251968505
+      ],
+      "width_dim_text": "3'-0\"",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W2",
+      "tag": "W-2",
+      "kind": "sliding_window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        543.5787401574803,
+        649.0984251968505,
+        609.9537401574804,
+        660.3484251968505
+      ],
+      "width_dim_text": null,
+      "counted": true,
+      "dup_tag": true
+    },
+    {
+      "type_key": "W4",
+      "tag": "W-4",
+      "kind": "window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        218.45374015748033,
+        212.59842519685049,
+        245.45374015748033,
+        223.84842519685049
+      ],
+      "width_dim_text": "2'-0\"",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W1",
+      "tag": "W-1",
+      "kind": "window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        317.4537401574803,
+        212.59842519685049,
+        344.4537401574803,
+        223.84842519685049
+      ],
+      "width_dim_text": "2'-0\"",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W4",
+      "tag": "W-4",
+      "kind": "window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        464.8287401574803,
+        212.59842519685049,
+        491.8287401574803,
+        223.84842519685049
+      ],
+      "width_dim_text": "2'-0\"",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W4",
+      "tag": "W-4",
+      "kind": "window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        531.2037401574803,
+        212.59842519685049,
+        558.2037401574804,
+        223.84842519685049
+      ],
+      "width_dim_text": "2'-0\"",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "D1",
+      "tag": "D-1",
+      "kind": "door",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        585.2037401574804,
+        212.59842519685049,
+        625.7037401574804,
+        223.84842519685049
+      ],
+      "width_dim_text": "3'-0\"",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W5",
+      "tag": "W-5",
+      "kind": "window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        170.07874015748033,
+        563.5984251968505,
+        181.32874015748033,
+        629.9734251968505
+      ],
+      "width_dim_text": "4'-11\"",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W2",
+      "tag": "W-2",
+      "kind": "sliding_window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        170.07874015748033,
+        461.2234251968505,
+        181.32874015748033,
+        527.5984251968505
+      ],
+      "width_dim_text": "4'-11\"",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W3",
+      "tag": "W-3",
+      "kind": "window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        170.07874015748033,
+        349.8484251968505,
+        181.32874015748033,
+        416.2234251968505
+      ],
+      "width_dim_text": null,
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W5",
+      "tag": "W-5",
+      "kind": "window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        170.07874015748033,
+        245.22342519685043,
+        181.32874015748033,
+        311.5984251968504
+      ],
+      "width_dim_text": "4'-11\"",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W3",
+      "tag": "W-3",
+      "kind": "window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        674.0787401574803,
+        562.4734251968505,
+        685.3287401574803,
+        628.8484251968505
+      ],
+      "width_dim_text": null,
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "W4",
+      "tag": "W-4",
+      "kind": "window",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        674.0787401574803,
+        467.9734251968505,
+        685.3287401574803,
+        494.9734251968505
+      ],
+      "width_dim_text": null,
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "D1",
+      "tag": "D-1",
+      "kind": "door",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        674.0787401574803,
+        397.0984251968505,
+        685.3287401574803,
+        437.5984251968505
+      ],
+      "width_dim_text": "3'-0\"",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "D1",
+      "tag": "D-1",
+      "kind": "door",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        674.0787401574803,
+        280.0984251968505,
+        685.3287401574803,
+        320.5984251968505
+      ],
+      "width_dim_text": null,
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "D1",
+      "tag": "D-1",
+      "kind": "door",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        444.3927165354331,
+        562.4734251968505,
+        449.2647637795276,
+        602.9734251968505
+      ],
+      "width_dim_text": "3'-0\"",
+      "counted": true,
+      "dup_tag": false
+    },
+    {
+      "type_key": "D1",
+      "tag": "D-1",
+      "kind": "door",
+      "page_index": 0,
+      "floor": "GROUND FLOOR",
+      "gap_bbox": [
+        444.3927165354331,
+        263.2234251968505,
+        449.2647637795276,
+        303.7234251968505
+      ],
+      "width_dim_text": "3'-0\"",
+      "counted": true,
+      "dup_tag": false
+    }
+  ],
+  "references": [
+    {
+      "type_key": "W4",
+      "tag": "W-4",
+      "page_index": 1,
+      "view": "elevation",
+      "bbox": [
+        609.9537401574804,
+        125.45078740157481,
+        636.9537401574803,
+        178.32578740157481
+      ],
+      "height_dim_text": "3'-11\"",
+      "width_dim_text": null,
+      "height_explicit": true
+    },
+    {
+      "type_key": "W1",
+      "tag": "W-1",
+      "page_index": 1,
+      "view": "elevation",
+      "bbox": [
+        510.9537401574803,
+        125.45078740157481,
+        537.9537401574803,
+        191.82578740157481
+      ],
+      "height_dim_text": null,
+      "width_dim_text": null,
+      "height_explicit": false
+    },
+    {
+      "type_key": "W4",
+      "tag": "W-4",
+      "page_index": 1,
+      "view": "elevation",
+      "bbox": [
+        363.5787401574803,
+        125.45078740157481,
+        390.5787401574803,
+        178.32578740157481
+      ],
+      "height_dim_text": "3'-11\"",
+      "width_dim_text": null,
+      "height_explicit": true
+    },
+    {
+      "type_key": "W4",
+      "tag": "W-4",
+      "page_index": 1,
+      "view": "elevation",
+      "bbox": [
+        297.2037401574803,
+        125.45078740157481,
+        324.2037401574803,
+        178.32578740157481
+      ],
+      "height_dim_text": "3'-11\"",
+      "width_dim_text": null,
+      "height_explicit": true
+    },
+    {
+      "type_key": "D1",
+      "tag": "D-1",
+      "page_index": 1,
+      "view": "elevation",
+      "bbox": [
+        229.7037401574803,
+        127.70078740157481,
+        270.2037401574803,
+        231.20078740157481
+      ],
+      "height_dim_text": "7'-8\"",
+      "width_dim_text": null,
+      "height_explicit": true
+    },
+    {
+      "type_key": "W4",
+      "tag": "W-4",
+      "page_index": 1,
+      "view": "elevation",
+      "bbox": [
+        219.57874015748033,
+        413.34448818897636,
+        246.57874015748033,
+        466.21948818897636
+      ],
+      "height_dim_text": "3'-11\"",
+      "width_dim_text": "2'-0\"",
+      "height_explicit": true
+    },
+    {
+      "type_key": "D1",
+      "tag": "D-1",
+      "page_index": 1,
+      "view": "elevation",
+      "bbox": [
+        321.95374015748035,
+        415.59448818897636,
+        362.4537401574803,
+        519.0944881889764
+      ],
+      "height_dim_text": null,
+      "width_dim_text": "3'-0\"",
+      "height_explicit": false
+    },
+    {
+      "type_key": "D1",
+      "tag": "D-1",
+      "page_index": 1,
+      "view": "elevation",
+      "bbox": [
+        464.8287401574803,
+        415.59448818897636,
+        505.3287401574803,
+        519.0944881889764
+      ],
+      "height_dim_text": null,
+      "width_dim_text": null,
+      "height_explicit": false
+    },
+    {
+      "type_key": "W2",
+      "tag": "W-2",
+      "page_index": 1,
+      "view": "elevation",
+      "bbox": [
+        543.5787401574803,
+        412.21948818897636,
+        609.9537401574804,
+        492.09448818897636
+      ],
+      "height_dim_text": "5'-11\"",
+      "width_dim_text": "4'-11\"",
+      "height_explicit": true
+    },
+    {
+      "type_key": "W3",
+      "tag": "W-3",
+      "page_index": 2,
+      "view": "elevation",
+      "bbox": [
+        201.57874015748033,
+        164.82578740157481,
+        267.9537401574803,
+        191.82578740157481
+      ],
+      "height_dim_text": "2'-0\"",
+      "width_dim_text": null,
+      "height_explicit": true
+    },
+    {
+      "type_key": "W4",
+      "tag": "W-4",
+      "page_index": 2,
+      "view": "elevation",
+      "bbox": [
+        335.4537401574803,
+        125.45078740157481,
+        362.4537401574803,
+        178.32578740157481
+      ],
+      "height_dim_text": null,
+      "width_dim_text": null,
+      "height_explicit": false
+    },
+    {
+      "type_key": "D1",
+      "tag": "D-1",
+      "page_index": 2,
+      "view": "elevation",
+      "bbox": [
+        392.82874015748035,
+        127.70078740157481,
+        433.3287401574803,
+        231.20078740157481
+      ],
+      "height_dim_text": "7'-8\"",
+      "width_dim_text": null,
+      "height_explicit": true
+    },
+    {
+      "type_key": "D1",
+      "tag": "D-1",
+      "page_index": 2,
+      "view": "elevation",
+      "bbox": [
+        509.8287401574803,
+        127.70078740157481,
+        550.3287401574803,
+        231.20078740157481
+      ],
+      "height_dim_text": null,
+      "width_dim_text": null,
+      "height_explicit": false
+    },
+    {
+      "type_key": "W5",
+      "tag": "W-5",
+      "page_index": 2,
+      "view": "elevation",
+      "bbox": [
+        521.0787401574803,
+        439.21948818897636,
+        587.4537401574803,
+        466.21948818897636
+      ],
+      "height_dim_text": "2'-0\"",
+      "width_dim_text": null,
+      "height_explicit": true
+    },
+    {
+      "type_key": "W2",
+      "tag": "W-2",
+      "page_index": 2,
+      "view": "elevation",
+      "bbox": [
+        418.7037401574803,
+        412.21948818897636,
+        485.0787401574803,
+        492.09448818897636
+      ],
+      "height_dim_text": null,
+      "width_dim_text": null,
+      "height_explicit": false
+    },
+    {
+      "type_key": "W3",
+      "tag": "W-3",
+      "page_index": 2,
+      "view": "elevation",
+      "bbox": [
+        307.3287401574803,
+        452.71948818897636,
+        373.7037401574803,
+        479.71948818897636
+      ],
+      "height_dim_text": "2'-0\"",
+      "width_dim_text": null,
+      "height_explicit": true
+    },
+    {
+      "type_key": "W5",
+      "tag": "W-5",
+      "page_index": 2,
+      "view": "elevation",
+      "bbox": [
+        202.70374015748027,
+        439.21948818897636,
+        269.0787401574803,
+        466.21948818897636
+      ],
+      "height_dim_text": "2'-0\"",
+      "width_dim_text": null,
+      "height_explicit": true
+    }
+  ],
+  "types": [
+    {
+      "type_key": "W1",
+      "tag": "W-1",
+      "kind": "window",
+      "width_mm": 609.5999999999999,
+      "height_mm": 1498.6,
+      "width_status": "explicit",
+      "width_expected": 609.5999999999999,
+      "height_status": "inferred",
+      "height_expected": 1498.6,
+      "quantity": 1,
+      "schedule_quantity": null,
+      "in_schedule": false,
+      "expected_flags": [
+        "scale_inferred"
+      ]
+    },
+    {
+      "type_key": "W2",
+      "tag": "W-2",
+      "kind": "sliding_window",
+      "width_mm": 1498.6,
+      "height_mm": 1803.3999999999999,
+      "width_status": "explicit",
+      "width_expected": 1498.6,
+      "height_status": "explicit",
+      "height_expected": 1803.3999999999999,
+      "quantity": 2,
+      "schedule_quantity": 2,
+      "in_schedule": true,
+      "expected_flags": [
+        "possible_duplicate"
+      ]
+    },
+    {
+      "type_key": "W3",
+      "tag": "W-3",
+      "kind": "window",
+      "width_mm": 1498.6,
+      "height_mm": 609.5999999999999,
+      "width_status": "explicit",
+      "width_expected": 1498.6,
+      "height_status": "explicit",
+      "height_expected": 609.5999999999999,
+      "quantity": 2,
+      "schedule_quantity": 2,
+      "in_schedule": true,
+      "expected_flags": []
+    },
+    {
+      "type_key": "W4",
+      "tag": "W-4",
+      "kind": "window",
+      "width_mm": 609.5999999999999,
+      "height_mm": 1193.8,
+      "width_status": "explicit",
+      "width_expected": 609.5999999999999,
+      "height_status": "explicit",
+      "height_expected": 1193.8,
+      "quantity": 5,
+      "schedule_quantity": 5,
+      "in_schedule": true,
+      "expected_flags": []
+    },
+    {
+      "type_key": "W5",
+      "tag": "W-5",
+      "kind": "window",
+      "width_mm": 1498.6,
+      "height_mm": 609.5999999999999,
+      "width_status": "explicit",
+      "width_expected": 1498.6,
+      "height_status": "explicit",
+      "height_expected": 609.5999999999999,
+      "quantity": 2,
+      "schedule_quantity": 2,
+      "in_schedule": true,
+      "expected_flags": []
+    },
+    {
+      "type_key": "D1",
+      "tag": "D-1",
+      "kind": "door",
+      "width_mm": 914.4,
+      "height_mm": 2336.7999999999997,
+      "width_status": "explicit",
+      "width_expected": 914.4,
+      "height_status": "explicit",
+      "height_expected": 2336.7999999999997,
+      "quantity": 7,
+      "schedule_quantity": 7,
+      "in_schedule": true,
+      "expected_flags": []
+    },
+    {
+      "type_key": "D2",
+      "tag": "D-2",
+      "kind": "door",
+      "width_mm": 914.4,
+      "height_mm": 2032.0,
+      "width_status": "explicit",
+      "width_expected": 914.4,
+      "height_status": "explicit",
+      "height_expected": 2032.0,
+      "quantity": 0,
+      "schedule_quantity": 0,
+      "in_schedule": true,
+      "expected_flags": [
+        "schedule_only"
+      ]
+    },
+    {
+      "type_key": "DD1",
+      "tag": "D-3",
+      "kind": "double_door",
+      "width_mm": 1803.3999999999999,
+      "height_mm": 2108.2,
+      "width_status": "missing",
+      "width_expected": null,
+      "height_status": "missing",
+      "height_expected": null,
+      "quantity": 0,
+      "schedule_quantity": null,
+      "in_schedule": false,
+      "expected_flags": [
+        "missing_width",
+        "missing_height"
+      ]
+    }
+  ]
+}
