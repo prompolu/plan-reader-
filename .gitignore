@@ -12,3 +12,5 @@ dist/
 .env
 storage/
 *.log
+benchmark_results/
+*.egg-info/
