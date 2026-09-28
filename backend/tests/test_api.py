@@ -57,6 +57,55 @@ def test_login_rate_limited(client):
     assert r.status_code == 429
 
 
+def test_browser_workspace_without_sign_in(client, app):
+    from fastapi.testclient import TestClient
+
+    r = client.post("/api/auth/workspace")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["user"]["workspace"] is True
+    cookie = r.headers.get("set-cookie", "")
+    assert "pm_session=" in cookie and "HttpOnly" in cookie
+    client.headers["x-csrf-token"] = body["csrf_token"]
+    # the same browser keeps its workspace
+    again = client.post("/api/auth/workspace").json()
+    assert again["user"]["id"] == body["user"]["id"] and again["csrf_token"] == body["csrf_token"]
+    pid = client.post("/api/projects", json={"name": "Mine"}).json()["id"]
+    # another browser gets its own, separate workspace
+    with TestClient(app) as other:
+        o = other.post("/api/auth/workspace").json()
+        assert o["user"]["id"] != body["user"]["id"]
+        assert other.get(f"/api/projects/{pid}").status_code == 404
+        assert all(p["id"] != pid for p in other.get("/api/projects").json())
+    # workspaces cannot be entered with a password, nor registered by email
+    email = body["user"]["email"]
+    assert client.post("/api/auth/login", json={"email": email, "password": "!"}).status_code == 401
+    assert client.post("/api/auth/register", json={"email": "x@workspace.local", "password": "Str0ng-Password"}).status_code == 422
+    # reopening an existing workspace is not rate limited (every page load does it)
+    for _ in range(15):
+        assert client.post("/api/auth/workspace").status_code == 200
+
+
+def test_workspace_session_keeps_its_lifetime_when_sliding(client, app):
+    from datetime import datetime, timedelta, timezone
+
+    from planmeasure.db import get_sessionmaker
+    from planmeasure.models import UserSession
+    from planmeasure.security import token_hash
+
+    client.post("/api/auth/workspace")
+    token = client.cookies.get("pm_session")
+    with get_sessionmaker()() as db:
+        sess = db.query(UserSession).filter_by(token_hash=token_hash(token)).one()
+        sess.last_seen_at = sess.last_seen_at - timedelta(minutes=5)
+        sess.expires_at = sess.expires_at - timedelta(minutes=5)
+        db.commit()
+    assert client.get("/api/auth/me").status_code == 200
+    with get_sessionmaker()() as db:
+        sess = db.query(UserSession).filter_by(token_hash=token_hash(token)).one()
+        assert sess.expires_at - datetime.now(timezone.utc) > timedelta(days=300)
+
+
 def test_security_headers(client):
     r = client.get("/api/health")
     assert r.headers["x-content-type-options"] == "nosniff"

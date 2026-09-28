@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     allow_registration: bool = True
     cookie_secure: bool = False
     session_ttl_hours: int = 12
+    # sign-in free browser workspaces: sliding lifetime of the workspace cookie
+    workspace_session_days: int = 365
     signed_url_ttl_seconds: int = 900
 
     # rate limits ("<count>/<second|minute|hour>")

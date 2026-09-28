@@ -50,10 +50,11 @@ def current_session(request: Request, db: Session = Depends(get_db)) -> UserSess
         sent = request.headers.get(CSRF_HEADER, "")
         if not sent or not hmac.compare_digest(sent, sess.csrf_token):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "CSRF token missing or invalid")
-    # sliding expiry (at most one write per minute)
+    # sliding expiry (at most one write per minute), keeping the session's own lifetime
     if now - sess.last_seen_at > timedelta(minutes=1):
+        ttl = max(sess.expires_at - sess.last_seen_at, timedelta(hours=get_settings().session_ttl_hours))
         sess.last_seen_at = now
-        sess.expires_at = now + timedelta(hours=get_settings().session_ttl_hours)
+        sess.expires_at = now + ttl
         db.commit()
     request.state.user = user
     return sess

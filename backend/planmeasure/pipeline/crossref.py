@@ -128,6 +128,9 @@ def _schedule_candidate(e: ScheduleEntry, which: str, page: PageContext) -> dict
 def _source_label(c: dict[str, Any]) -> str:
     if c["source"] == "schedule":
         return (c.get("view_title") or "Schedule").title()
+    if c.get("view_title"):
+        # e.g. "West Elevation A-202" - distinguishes several views on one sheet
+        return f"{c['view_title'].title()} {c['sheet']}"
     vt = PAGE_TYPE_LABELS.get(c.get("view_type") or "", "Drawing")
     return f"{vt} {c['sheet']}"
 
