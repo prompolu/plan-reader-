@@ -15,3 +15,5 @@ storage/
 benchmark_results/
 *.egg-info/
 *.tsbuildinfo
+test-results/
+playwright-report/

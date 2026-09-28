@@ -17,6 +17,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import select, text, update
 from sqlalchemy.orm import Session
 
@@ -176,8 +177,15 @@ def worker_loop(stop: threading.Event | None = None, once: bool = False) -> int:
     worker_id = f"{socket.gethostname()}:{os.getpid()}:{threading.get_ident()}"
     n = 0
     while stop is None or not stop.is_set():
-        with get_sessionmaker()() as db:
-            job = claim(db, worker_id)
+        try:
+            with get_sessionmaker()() as db:
+                job = claim(db, worker_id)
+        except SQLAlchemyError as exc:  # database not reachable / not migrated yet
+            log.warning("could not claim a job (%s); retrying", exc.__class__.__name__)
+            if once:
+                return n
+            time.sleep(max(2.0, s.worker_poll_seconds))
+            continue
         if job is None:
             if once:
                 return n
