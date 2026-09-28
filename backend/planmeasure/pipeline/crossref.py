@@ -177,7 +177,7 @@ def reconcile(cands: list[dict[str, Any]], which: str) -> tuple[dict[str, Any] |
         m["evidence"] = ev
         m["candidates"] = [_cand_summary(c) for c in cl]
         if primary.get("unit_basis") == "assumed" and not any(c["unit_basis"] in ("explicit", "note", "scale") for c in cl):
-            flags.append(flag("unit_assumed", f"{which.title()} {primary['original_text']} has no unit and no unit note was found; millimetres assumed"))
+            flags.append(flag("unit_assumed", f"{which.title()} {primary['original_text']} has no unit and no unit note was found; millimetres assumed", field=which))
         return m, flags
     # conflict: show every source, decide nothing
     summ = [_cand_summary(c) for cl in clusters for c in cl]
@@ -365,7 +365,7 @@ def _record(
     for a in instances:
         twin = next((m for m in merged if m.det.page_index == a.det.page_index and m.det.bbox.iou(a.det.bbox) > 0.3), None)
         if twin is not None:
-            flags.append(flag("possible_duplicate", f"Two detections overlap at the same location on {a.page.ref()}; counted once", page_index=a.det.page_index))
+            flags.append(flag("possible_duplicate", f"Two detections overlap at the same location on {a.page.ref()}; counted once", page_index=a.det.page_index, field="quantity"))
             continue
         merged.append(a)
     instances = merged
@@ -413,14 +413,14 @@ def _record(
         geo_family = "window" if kind in ("window", "sliding_window", "curtain_wall") else ("door" if kind in ("door", "double_door", "sliding_door", "garage_door") else "opening")
         if family != geo_family and votes:
             if geo_family != "opening":
-                flags.append(flag("unclear_type", f"Tag prefix '{prefix}' suggests a {family}, but the drawing symbol looks like a {OPENING_TYPE_LABELS.get(kind, kind).lower()}"))
+                flags.append(flag("unclear_type", f"Tag prefix '{prefix}' suggests a {family}, but the drawing symbol looks like a {OPENING_TYPE_LABELS.get(kind, kind).lower()}", field="type"))
             kind = tclass if tclass in OPENING_TYPE_LABELS else family
         elif tclass not in ("door", "window", "opening"):
             kind = tclass  # SD/GD/SW/CW prefixes are specific
     if sched_kind:
         kind = sched_kind
     if not votes and not tclass:
-        flags.append(flag("unclear_type", "Opening type could not be determined"))
+        flags.append(flag("unclear_type", "Opening type could not be determined", field="type"))
 
     # ---- measurements ----
     def cands_for(which: str) -> list[dict[str, Any]]:
@@ -449,15 +449,15 @@ def _record(
             inf = _inferred(instances + refs, which)
             if inf is not None:
                 m = inf
-                flags.append(flag("scale_inferred", f"{which.title()} {format_length(inf['value'], 'mm')} inferred from drawing scale - no explicit dimension found"))
+                flags.append(flag("scale_inferred", f"{which.title()} {format_length(inf['value'], 'mm')} inferred from drawing scale - no explicit dimension found", field=which))
             else:
-                flags.append(flag(f"missing_{which}", f"{which.title()} could not be determined from the drawings - needs review"))
+                flags.append(flag(f"missing_{which}", f"{which.title()} could not be determined from the drawings - needs review", field=which))
         elif m["status"] == "explicit":
             weak = [e for e in m["evidence"] if e["code"] in ("ambiguous",)]
             if m["confidence"] < 0.65 or weak:
-                flags.append(flag("uncertain_association", f"{which.title()} {m['original_text']} - dimension association is uncertain"))
+                flags.append(flag("uncertain_association", f"{which.title()} {m['original_text']} - dimension association is uncertain", field=which))
             if any(e["code"] == "level_alignment" for e in m["evidence"]) and not any(c["source"] == "schedule" for c in m["candidates"]) and m["confidence"] < thr.high:
-                flags.append(flag("uncertain_association", f"{which.title()} taken from a level dimension shared with other openings"))
+                flags.append(flag("uncertain_association", f"{which.title()} taken from a level dimension shared with other openings", field=which))
         measurements[which] = m
 
     # ---- quantity ----
@@ -470,11 +470,11 @@ def _record(
         if elev and not any(a.note for a in refs):
             qty = len(elev)
             qty_basis = "elevation_references"
-            flags.append(flag("counted_from_elevations", f"No floor-plan instance found; quantity {qty} counted from elevations"))
+            flags.append(flag("counted_from_elevations", f"No floor-plan instance found; quantity {qty} counted from elevations", field="quantity"))
         else:
             qty = len([a for a in refs if a.note]) or 0
             qty_basis = "reference_only"
-            flags.append(flag("reference_only", "Shown only on details/duplicate sheets - not located on a floor plan"))
+            flags.append(flag("reference_only", "Shown only on details/duplicate sheets - not located on a floor plan", field="quantity"))
     elif sched:
         qty = 0
         qty_basis = "schedule_only"
@@ -482,22 +482,23 @@ def _record(
             flag(
                 "schedule_only",
                 f"{sched.schedule_title.title()} lists {sched.tag}" + (f" (qty {sched.quantity})" if sched.quantity is not None else "") + " but it was not found on any drawing; not counted",
+                field="quantity",
             )
         )
     else:
         qty = 0
         qty_basis = "none"
     if sched and sched.quantity is not None and qty_basis != "schedule_only" and sched.quantity != qty:
-        flags.append(flag("quantity_conflict", f"Schedule quantity {sched.quantity} vs {qty} located on the drawings", schedule_quantity=sched.quantity, located=qty))
+        flags.append(flag("quantity_conflict", f"Schedule quantity {sched.quantity} vs {qty} located on the drawings", schedule_quantity=sched.quantity, located=qty, field="quantity"))
 
     # ---- duplicates ----
     for a in instances:
         dups = a.det.features.get("duplicate_tags") or []
         if dups:
-            flags.append(flag("possible_duplicate", f"Tag {tag_text} is written {len(dups) + 1} times at one opening on {a.page.ref()}; counted once", page_index=a.det.page_index))
+            flags.append(flag("possible_duplicate", f"Tag {tag_text} is written {len(dups) + 1} times at one opening on {a.page.ref()}; counted once", page_index=a.det.page_index, field="quantity"))
     for a in refs:
         if a.note:
-            flags.append(flag("possible_duplicate", a.note + "; not counted again", page_index=a.det.page_index))
+            flags.append(flag("possible_duplicate", a.note + "; not counted again", page_index=a.det.page_index, field="quantity"))
 
     # ---- tag ----
     tag_conf = None
@@ -505,9 +506,9 @@ def _record(
     if primary and primary.det.tag:
         tag_conf = primary.det.tag_score
         if tag_conf < 0.7:
-            flags.append(flag("unclear_tag", f"Tag {tag_text} association is uncertain"))
+            flags.append(flag("unclear_tag", f"Tag {tag_text} association is uncertain", field="tag"))
     elif key is None:
-        flags.append(flag("unclear_tag", "No tag found for this opening"))
+        flags.append(flag("unclear_tag", "No tag found for this opening", field="tag"))
         tag_conf = 0.0
     elif sched:
         tag_conf = sched.confidence
@@ -571,7 +572,7 @@ def _record(
             seen.add(k)
             uniq_flags.append(f)
 
-    floors = sorted({a.page.floor for a in instances if a.page.floor})
+    floors = list(dict.fromkeys(a.page.floor for a in sorted(instances, key=lambda a: a.page.index) if a.page.floor))
     inst_out = [
         {
             "detection_id": a.det.id,
