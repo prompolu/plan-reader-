@@ -62,8 +62,28 @@ export async function renderRegion(projectId: string, pageId: string, x: number,
   }
 }
 
-/** Save a file to the user's device (a save dialog in the desktop app, Downloads/Files in a browser). */
-export function saveBlob(blob: Blob, filename: string): void {
+/** iPhone / iPad (iPadOS reports itself as a Mac with touch). */
+export function isIOS(): boolean {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+/**
+ * Save a file to the user's device: a save dialog in the desktop app, the
+ * Downloads folder in a browser, the share sheet ("Save to Files") on iPhone.
+ */
+export async function saveBlob(blob: Blob, filename: string): Promise<void> {
+  if (isIOS() && typeof navigator.canShare === "function") {
+    const file = new File([blob], filename, { type: blob.type || "application/octet-stream" });
+    if (navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: filename });
+        return;
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return; // the user closed the share sheet
+        // otherwise (e.g. no longer allowed after a long export) fall back to a download
+      }
+    }
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -78,5 +98,5 @@ export function saveBlob(blob: Blob, filename: string): void {
 /** Generate a file with the local API (PDF export, project file) and save it. */
 export async function downloadBlob(path: string, body: unknown, fallbackName: string, method = "POST"): Promise<void> {
   const r = await api<{ blob: Blob; filename?: string }>(path, { method, body });
-  saveBlob(r.blob, r.filename || fallbackName);
+  await saveBlob(r.blob, r.filename || fallbackName);
 }

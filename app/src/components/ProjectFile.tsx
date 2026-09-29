@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { FolderOpen, Save } from "lucide-react";
-import { ApiError, downloadBlob, openProjectFile } from "../api/client";
+import { ApiError, downloadBlob, isIOS, openProjectFile } from "../api/client";
 import type { Project } from "../api/types";
 import { fmtDate, Modal, useToast } from "./ui";
 
@@ -109,7 +109,8 @@ export function OpenProjectFileButton({ className = "btn" }: { className?: strin
       <input
         ref={input}
         type="file"
-        accept=".planmeasure,application/zip"
+        // iOS greys out file types it does not know, so it gets no filter (the file is checked on opening)
+        accept={isIOS() ? undefined : ".planmeasure,application/zip"}
         hidden
         onChange={(e) => {
           const f = e.target.files?.[0];
