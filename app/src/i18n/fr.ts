@@ -122,6 +122,7 @@ const fr: Record<string, string> = {
   "Sliding window": "Fenêtre coulissante",
   "Garage door": "Porte de garage",
   "Curtain wall": "Mur-rideau",
+  Railing: "Garde-corps",
   Other: "Autre",
   door: "porte",
   "double door": "porte double",

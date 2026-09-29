@@ -17,8 +17,9 @@ import { ElevationOpeningDetector, PlanOpeningDetector } from "./openings";
 import { PdfDocument } from "./pdfdoc";
 import { platform, toGray, type OCRProvider, type VisionProvider } from "./platform";
 import { calibrateFromDimensions, findScaleMentions, formatRatio, scaleCheck } from "./scale";
-import { extractSchedules } from "./schedules";
-import { detectTags, symbolSegments } from "./tags";
+import { extractLegendEntries, extractSchedules } from "./schedules";
+import { hatchSegments } from "./hatch";
+import { detectTags, findLeaders, symbolSegments } from "./tags";
 import {
   SCHEDULE_TYPES,
   ScaleInfo,
@@ -28,7 +29,7 @@ import {
   evidence,
   scheduleToDict,
   tagToDict,
-  type BBox,
+  BBox,
   type DimensionAnnotation,
   type OpeningDetection,
   type PageClassification,
@@ -284,12 +285,16 @@ export class ExtractionPipeline {
     t.classify = now() - t0;
     t0 = now();
     const views = segmentViews(pd, cls);
+    // opening types drawn once with their tag, size and count (a legend instead of a table)
+    const [legend, legendTagLines] = extractLegendEntries(pd, cls);
+    if (legend.length) markLegendViews(pd, views, legend);
     this.applyScales(pd, views);
     t.views = now() - t0;
     const ctxFor = (v: View) => new DetectionContext(pd, v);
 
     t0 = now();
-    const tags = detectTags(pd, views, cls.titleBlock, DRAWING_VIEWS);
+    const legendLineIds = new Set(legendTagLines.map((ln) => ln.id));
+    const tags = detectTags(pd, views, cls.titleBlock, DRAWING_VIEWS).filter((tg) => !legendLineIds.has(tg.lineId));
     const symbols = symbolSegments(pd, tags);
     t.tags = now() - t0;
 
@@ -299,8 +304,9 @@ export class ExtractionPipeline {
     t.dimensions = now() - t0;
 
     t0 = now();
-    // annotation graphics (dimensions, tag symbols) are not building geometry
-    const used = new Set([...usedDims, ...symbols]);
+    // annotation graphics (dimensions, tag symbols) and fill patterns are not building geometry
+    const used = new Set([...usedDims, ...symbols, ...hatchSegments(pd.geometry.segments)]);
+    findLeaders(pd, tags, used);
     let detections: OpeningDetection[] = [];
     let orphans: TagDetection[] = [];
     for (const v of views) {
@@ -344,6 +350,8 @@ export class ExtractionPipeline {
     t0 = now();
     let schedules: ScheduleEntry[] = [];
     if (SCHEDULE_TYPES.has(cls.pageType) || cls.secondaryTypes.some((s) => SCHEDULE_TYPES.has(s)) || views.some((v) => SCHEDULE_TYPES.has(v.viewType))) schedules = extractSchedules(pd, views, cls);
+    const inTables = new Set(schedules.map((e) => e.tagKey));
+    schedules = schedules.concat(legend.filter((e) => !inTables.has(e.tagKey)));
     t.schedules = now() - t0;
     return { page: pd, cls, views, dims, tags, detections, orphanTags: orphans, schedules, stageSeconds: t };
   }
@@ -419,6 +427,7 @@ export class ExtractionPipeline {
         poorQuality: r.page.quality.poor,
         qualityReasons: r.page.quality.reasons,
         label: r.page.label,
+        language: r.cls.language,
       };
       pages.set(r.page.index, pc);
       for (const d of r.dims) dims.set(d.id, d);
@@ -430,6 +439,24 @@ export class ExtractionPipeline {
       schedules = schedules.concat(r.schedules);
     }
     return buildRecords(pages, detections, orphans, dims, schedules, this.config.thresholds);
+  }
+}
+
+/**
+ * The type drawings of a legend (each window or door drawn once, its tag, size
+ * and count underneath) are schedule content, not plans to search for openings.
+ */
+function markLegendViews(pd: PageData, views: View[], legend: ScheduleEntry[]): void {
+  const pageArea = pd.width * pd.height;
+  for (const e of legend) {
+    const rb = e.rowBBox;
+    const reach = new BBox(rb.x0 - 1.5 * rb.w, rb.y0 - 0.12 * pd.height, 4 * rb.w, rb.h + 0.12 * pd.height);
+    for (const v of views) {
+      if (v.bbox.area > 0.2 * pageArea || v.viewType === "notes") continue;
+      const holds = v.bbox.containsPoint(rb.cx, rb.cy);
+      const above = v.bbox.y1 <= rb.y0 + rb.h && reach.intersectionArea(v.bbox) > 0.3 * v.bbox.area;
+      if (holds || above) v.viewType = "opening_schedule";
+    }
   }
 }
 

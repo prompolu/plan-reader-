@@ -45,7 +45,8 @@ export const RE_FT_IN = new RegExp(String.raw`(?<![\w.'"/])` + FT_IN, "g");
 export const RE_INCH = new RegExp(String.raw`(?<![\w.'"/-])` + INCH, "g");
 export const RE_METRIC_UNIT = new RegExp(String.raw`(?<![\w.,])` + METRIC_UNIT, "gi");
 // a trailing/leading "x" is allowed so that "900x2100" parses as a pair
-export const RE_PLAIN = new RegExp(String.raw`(?<![0-9A-WYZa-wyz_.,/:'"+\-#])(?:(?<pdec>\d{1,2}\.\d{1,3})|(?<pint>\d{2,5}))(?![0-9A-WYZa-wyz_.,/:'"%])`, "g");
+// decimals: "3.45" / "3,45" (metres) or "340.0" (centimetres); only read when the drawing uses m or cm
+export const RE_PLAIN = new RegExp(String.raw`(?<![0-9A-WYZa-wyz_.,/:'"+\-#])(?:(?<pdec>\d{1,5}[.,]\d{1,3})|(?<pint>\d{2,5}))(?![0-9A-WYZa-wyz_.,/:'"%])`, "g");
 export const RE_SCALE_METRIC = new RegExp(String.raw`(?<![\d.])1\s*:\s*(?<den>\d{1,5})(?!\d)`, "g");
 export const RE_SCALE_IMPERIAL = new RegExp(String.raw`(?<paper>\d{1,2}(?:\s*[- ]\s*\d{1,2}\/\d{1,2})?|\d{1,2}\/\d{1,3})\s*(?:"|'')\s*=\s*(?<real>\d{1,3})\s*'\s*-?\s*0?\s*(?:"|'')?`, "g");
 export const RE_LEVEL = new RegExp(String.raw`(?:(?:FFL|FL|RL|EL|LEVEL|TOS|SSL|SFL|T\.O\.)\.?\s*)?[+±-]\s*\d{1,3}[.,]\d{2,3}`, "gi");
@@ -185,10 +186,16 @@ export function findExpressions(text: string, defaultUnit = "mm"): Expression[] 
       val = parseFloat(m.groups!.pint);
       unit = ["mm", "cm", "in"].includes(defaultUnit) ? defaultUnit : "mm";
     } else {
-      val = parseFloat(m.groups!.pdec!);
-      // a plain decimal is only a length if the drawing states metres
-      if (defaultUnit !== "m") continue;
-      unit = "m";
+      const raw = m.groups!.pdec!;
+      // a plain decimal is only a length on drawings dimensioned in metres ("3.45")
+      // or centimetres ("340.0"); a millimetre or imperial drawing has none
+      if (defaultUnit !== "m" && defaultUnit !== "cm") continue;
+      const intDigits = raw.search(/[.,]/);
+      // "3,450" on a metric drawing is a thousands separator, not metres
+      if (raw.includes(",") && raw.length - intDigits - 1 === 3) continue;
+      if (defaultUnit === "m" && intDigits > 2) continue; // 340.0 m is not a building dimension
+      val = parseFloat(raw.replace(",", "."));
+      unit = defaultUnit;
     }
     take(a, b);
     const system = unit === "in" ? "imperial" : "metric";

@@ -10,20 +10,35 @@ import { median, maxBy, pyRound, sortedBy } from "./py";
 
 const RE_SHEET_NUMBER = /^(?:[A-Z]{1,3}[-.\s]?\d{1,4}(?:\.\d{1,3})?[A-Z]?)$/;
 const TITLE_BLOCK_LABELS =
-  /^(SHEET(\s+(NO|NUMBER|TITLE))?\.?|DRAWING\s+(NO|NUMBER|TITLE)\.?|DWG\.?\s*NO\.?|SCALE|DATE|REV(ISION)?\.?|PROJECT(\s+NO\.?)?|DRAWN(\s+BY)?|CHECKED(\s+BY)?|CLIENT|TITLE|JOB\s+NO\.?)[:.]?$/i;
+  /^(SHEET(\s+(NO|NUMBER|TITLE))?\.?|DRAWING\s+(NO|NUMBER|TITLE)\.?|DWG\.?\s*NO\.?|SCALE|DATE|REV(ISION)?\.?|PROJECT(\s+NO\.?)?|DRAWN(\s+BY)?|CHECKED(\s+BY)?|CLIENT|TITLE|JOB\s+NO\.?|TITRE|[EÉ]CHELLE|NUM[EÉ]RO|R[EÉ]VISION|INDICE|PROJET|MA[IÎ]TRE\s+D['’]OUVRAGE|DESSIN[EÉ]\s+PAR|V[EÉ]RIFI[EÉ]\s+PAR|PHASE|PLANCHE|PROPRI[EÉ]TAIRES?|SITUATION|T[IÍ]TULO|ESCALA|FECHA|PLANO(\s+N[º°O]\.?)?|PROYECTO|PROPIEDAD|PROMOTOR|DIBUJ(O|ADO)(\s+POR)?|REVISI[OÓ]N)\s*[:.]?$/i;
 
-/** (type, regex). Order matters for overlapping phrases. */
+// word boundaries that also work next to accented letters (\b does not)
+const L0 = "(?<![\\p{L}\\d])";
+const L1 = "(?![\\p{L}\\d])";
+const w = (src: string) => new RegExp(src.replace(/<</g, L0).replace(/>>/g, L1), "iu");
+
+/** (type, regex). Order matters for overlapping phrases. English, French, Spanish. */
 export const TYPE_PATTERNS: [string, RegExp][] = [
-  ["site_plan", /\b(SITE\s+PLAN|LOCATION\s+PLAN|SITE\s+ANALYSIS|BLOCK\s+PLAN)\b/i],
-  ["opening_schedule", /\b(OPENING\s+SCHEDULE|DOOR\s*(?:AND|&|\/)\s*WINDOW\s+SCHEDULES?|WINDOW\s*(?:AND|&|\/)\s*DOOR\s+SCHEDULES?)\b/i],
-  ["door_schedule", /\bDOOR\s+SCHEDULE\b/i],
-  ["window_schedule", /\bWINDOW\s+SCHEDULE\b/i],
-  ["detail", /\b(DETAILS?|ENLARGED\s+\w+(\s+\w+)?\s+PLAN|ENLARGED\s+PLAN|PART\s+PLAN)\b/i],
-  ["elevation", /\bELEVATIONS?\b/i],
-  ["section", /\bSECTIONS?\b(?!\s+\d)/i],
-  ["cover", /\b(COVER\s+(SHEET|PAGE)|TITLE\s+SHEET|DRAWING\s+(LIST|INDEX|REGISTER)|SHEET\s+INDEX)\b/i],
-  ["notes", /\b(GENERAL\s+NOTES|NOTES|SPECIFICATIONS?|LEGEND|ABBREVIATIONS)\b/i],
-  ["floor_plan", /\b((GROUND|FIRST|SECOND|THIRD|FOURTH|UPPER|LOWER|MAIN|BASEMENT|MEZZANINE|ATTIC)\s+(FLOOR|LEVEL)(\s+PLAN)?|FLOOR\s+PLAN|LEVEL\s+\d+\s+PLAN|L\d+\s+PLAN|\bPLAN\b)/i],
+  ["site_plan", w("<<(SITE\\s+PLAN|LOCATION\\s+PLAN|SITE\\s+ANALYSIS|BLOCK\\s+PLAN|PLAN\\s+DE\\s+(MASSE|SITUATION|LOCALISATION)|PLAN\\s+D['’]IMPLANTATION|PLANO\\s+DE\\s+(SITUACI[OÓ]N|EMPLAZAMIENTO))>>")],
+  [
+    "opening_schedule",
+    w(
+      "<<(OPENING\\s+SCHEDULE|DOOR\\s*(?:AND|&|\\/)\\s*WINDOW\\s+SCHEDULES?|WINDOW\\s*(?:AND|&|\\/)\\s*DOOR\\s+SCHEDULES?|(TABLEAU|NOMENCLATURE|CARNET|LISTE)\\s+DES\\s+MENUISERIES|MENUISERIES\\s+(EXT[EÉ]RIEURES|INT[EÉ]RIEURES|ALU(MINIUM)?|BOIS)|(CUADRO|MEMORIA|RESUMEN)\\s+DE\\s+CARPINTER[IÍ]AS?|CARPINTER[IÍ]AS?)>>",
+    ),
+  ],
+  ["door_schedule", w("<<(DOOR\\s+SCHEDULE|TABLEAU\\s+DES\\s+PORTES|CUADRO\\s+DE\\s+PUERTAS)>>")],
+  ["window_schedule", w("<<(WINDOW\\s+SCHEDULE|TABLEAU\\s+DES\\s+FEN[EÊ]TRES|CUADRO\\s+DE\\s+VENTANAS)>>")],
+  ["detail", w("<<(DETAILS?|ENLARGED\\s+\\w+(\\s+\\w+)?\\s+PLAN|ENLARGED\\s+PLAN|PART\\s+PLAN|D[EÉ]TAILS?|DETALLES?)>>")],
+  ["elevation", w("<<(ELEVATIONS?|FA[CÇ]ADES?|[EÉ]L[EÉ]VATIONS?|ALZADOS?)>>")],
+  ["section", w("<<(SECTIONS?|COUPES?|SECCI[OÓ]N(ES)?|CORTES?)>>(?!\\s+\\d)")],
+  ["cover", w("<<(COVER\\s+(SHEET|PAGE)|TITLE\\s+SHEET|DRAWING\\s+(LIST|INDEX|REGISTER)|SHEET\\s+INDEX|PAGE\\s+DE\\s+GARDE|LISTE\\s+DES\\s+PLANS|[IÍ]NDICE\\s+DE\\s+PLANOS)>>")],
+  ["notes", w("<<(GENERAL\\s+NOTES|NOTES|SPECIFICATIONS?|LEGEND|ABBREVIATIONS|L[EÉ]GENDE|NOTAS|LEYENDA)>>")],
+  [
+    "floor_plan",
+    w(
+      "<<((GROUND|FIRST|SECOND|THIRD|FOURTH|UPPER|LOWER|MAIN|BASEMENT|MEZZANINE|ATTIC)\\s+(FLOOR|LEVEL)(\\s+PLAN)?|FLOOR\\s+PLAN|LEVEL\\s+\\d+\\s+PLAN|L\\d+\\s+PLAN|PLAN|REP[EÉ]RAGE|REZ[-\\s]+DE[-\\s]+CHAUSS[EÉ]E|SOUS[-\\s]+SOL|[EÉ]TAGE|PLANTA|PLANO)>>",
+    ),
+  ],
 ];
 
 const SHEET_PREFIX_HINT: [RegExp, string, number][] = [
@@ -37,25 +52,33 @@ const SHEET_PREFIX_HINT: [RegExp, string, number][] = [
 
 const FLOOR_PATTERNS: [RegExp, string][] = [
   [/\bBASEMENT\b/i, "Basement"],
+  [w("<<SOUS[-\\s]+SOL>>|<<S[OÓ]TANO>>"), "Basement"],
   [/\bGROUND\s+(FLOOR|LEVEL)\b/i, "Ground Floor"],
+  [w("<<REZ[-\\s]+DE[-\\s]+CHAUSS[EÉ]E>>|<<R\\.?D\\.?C\\.?>>|<<PLANTA\\s+BAJA>>"), "Ground Floor"],
   [/\bFIRST\s+(FLOOR|LEVEL)\b/i, "First Floor"],
+  [w("<<(1\\s*(ER|[EÈ]RE|ST)|PREMIER)\\s+[EÉ]TAGE>>|<<[EÉ]TAGE\\s+1>>|<<R\\s*\\+\\s*1>>|<<(PRIMERA\\s+PLANTA|PLANTA\\s+PRIMERA)>>"), "First Floor"],
   [/\bSECOND\s+(FLOOR|LEVEL)\b/i, "Second Floor"],
+  [w("<<(2\\s*([EÈ]ME|E|ND)|DEUXI[EÈ]ME|SECOND)\\s+[EÉ]TAGE>>|<<[EÉ]TAGE\\s+2>>|<<R\\s*\\+\\s*2>>|<<(SEGUNDA\\s+PLANTA|PLANTA\\s+SEGUNDA)>>"), "Second Floor"],
   [/\bTHIRD\s+(FLOOR|LEVEL)\b/i, "Third Floor"],
+  [w("<<(3\\s*([EÈ]ME|E|RD)|TROISI[EÈ]ME)\\s+[EÉ]TAGE>>|<<[EÉ]TAGE\\s+3>>|<<R\\s*\\+\\s*3>>|<<(TERCERA\\s+PLANTA|PLANTA\\s+TERCERA)>>"), "Third Floor"],
   [/\bMEZZANINE\b/i, "Mezzanine"],
   [/\bROOF\s+PLAN\b/i, "Roof"],
+  [w("<<TERRASSE>>|<<TOITURE>>|<<CUBIERTA>>"), "Roof"],
   [/\bLEVEL\s+0?(\d{1,2})\b/i, "Level {0}"],
   [/\bL0?(\d{1,2})\s+PLAN\b/i, "Level {0}"],
   [/\bUPPER\s+FLOOR\b/i, "Upper Floor"],
+  [w("<<[EÉ]TAGE>>"), "Upper Floor"],
   [/\bLOWER\s+FLOOR\b/i, "Lower Floor"],
 ];
 
 const UNIT_NOTES: [RegExp, string][] = [
-  [/\b(IN\s+)?MILLIMET(RE|ER)S?\b|\bDIMENSIONS\s+(ARE\s+)?IN\s+MM\b/i, "mm"],
-  [/\bDIMENSIONS\s+(ARE\s+)?IN\s+METRES?\b|\bIN\s+METERS\b/i, "m"],
+  [/\b(IN\s+)?MILLIMET(RE|ER)S?\b|\bDIMENSIONS\s+(ARE\s+)?IN\s+MM\b|MILLIM[EÈÉ]TRES|MIL[IÍ]METROS|COTES\s+EN\s+MM\b/i, "mm"],
+  [/CENTIM[EÈÉ]TRES|CENTIMET(RE|ER)S|CENT[IÍ]METROS|\bCOTES\s+EN\s+CM\b|\bDIMENSIONS\s+(ARE\s+)?IN\s+CM\b/i, "cm"],
+  [/\bDIMENSIONS\s+(ARE\s+)?IN\s+METRES?\b|\bIN\s+METERS\b|EN\s+M[EÈÉ]TRES|EN\s+METROS|\bCOTES\s+EN\s+M\b/i, "m"],
   [/\bFEET\s+AND\s+INCHES\b|\bIN\s+FEET\b|\bIMPERIAL\b/i, "in"],
 ];
 
-const SCHEDULE_HEADERS = /^(MARK|TAG|NO\.?|REF\.?|ID|TYPE|WIDTH|HEIGHT|SIZE|QTY|QUANTITY|SILL|REMARKS|NOTES|FRAME|FINISH|HARDWARE|W|H)$/i;
+const SCHEDULE_HEADERS = /^(MARK|TAG|NO\.?|REF\.?|ID|TYPE|WIDTH|HEIGHT|SIZE|QTY|QUANTITY|SILL|REMARKS|NOTES|FRAME|FINISH|HARDWARE|W|H|REP[EÈ]RE|R[EÉ]F[EÉ]RENCE|D[EÉ]SIGNATION|LARGEUR|HAUTEUR|DIMENSIONS?|NOMBRE|NBRE|QT[EÉ]|QUANTIT[EÉ]|ALL[EÈ]GE|OBSERVATIONS?|MARCA|TIPO|ANCHO|ALTO|ALTURA|MEDIDAS|CANTIDAD|UDS?\.?)$/i;
 
 /** Locate the title block from its field labels (SHEET, SCALE, DATE ...). */
 export function detectTitleBlock(page: PageData): BBox | null {
@@ -191,6 +214,8 @@ export function classifyTypeFromText(t: string): string | null {
 
 export function detectDefaultUnit(page: PageData, scaleTexts: string[]): [string, string] {
   for (const ln of page.lines) for (const [rx, unit] of UNIT_NOTES) if (rx.test(ln.text)) return [unit, "note"];
+  const byNotation = unitFromNotation(page);
+  if (byNotation) return [byNotation, "notation"];
   for (const s of scaleTexts) {
     if (s && s.includes(":")) return ["mm", "scale"];
     if (s && s.includes("=")) return ["in", "scale"];
@@ -199,6 +224,41 @@ export function detectDefaultUnit(page: PageData, scaleTexts: string[]): [string
   const imperial = page.lines.filter((ln) => /\d'\s*-?\s*\d+"/.test(ln.text)).length;
   if (imperial >= 3) return ["in", "notation"];
   return ["mm", "assumed"];
+}
+
+/**
+ * The unit the dimension numbers themselves are written in, when no note says:
+ * "3.45" / "0,90" (two decimals) is metres, "340.0" (one decimal after three or
+ * more digits) is centimetres, "3450" is millimetres.
+ */
+export function unitFromNotation(page: PageData): "m" | "cm" | null {
+  let metres = 0;
+  let centimetres = 0;
+  let integers = 0;
+  for (const ln of page.lines) {
+    const t = ln.text.trim();
+    if (/^\d{1,2}[.,]\d{2}$/.test(t)) metres++;
+    else if (/^\d{2,4}[.,]\d$/.test(t)) centimetres++;
+    else if (/^\d{3,5}$/.test(t)) integers++;
+  }
+  if (metres >= 6 && metres > 2 * (integers + centimetres)) return "m";
+  if (centimetres >= 6 && centimetres > 2 * (integers + metres)) return "cm";
+  return null;
+}
+
+const LANGUAGE_WORDS: [string, RegExp][] = [
+  ["fr", /(?<![\p{L}])(PLAN|FA[CÇ]ADE|COUPE|[EÉ]TAGE|REZ|CHAUSS[EÉ]E|CHAMBRE|CUISINE|SALON|S[EÉ]JOUR|PORTE|FEN[EÊ]TRE|[EÉ]CHELLE|TERRASSE|D[EÉ]GAGEMENT|SALLE|NOMBRE|ARCHITECTE|MENUISERIES?)(?![\p{L}])/iu],
+  ["es", /(?<![\p{L}])(PLANTA|ALZADO|SECCI[OÓ]N|DORMITORIO|COCINA|SAL[OÓ]N|BA[ÑN]O|PUERTA|VENTANA|ESCALA|CARPINTER[IÍ]A|CANTIDAD|TERRAZA)(?![\p{L}])/iu],
+  ["en", /\b(FLOOR|ELEVATION|SECTION|BEDROOM|KITCHEN|LIVING|BATH(ROOM)?|DOOR|WINDOW|SCALE|SCHEDULE|QUANTITY)\b/i],
+];
+
+/** The drawing's language (it decides what tag prefixes such as GD mean). */
+export function detectLanguage(page: PageData): "en" | "fr" | "es" {
+  const hits: Record<string, number> = { en: 0, fr: 0, es: 0 };
+  for (const ln of page.lines) for (const [lang, rx] of LANGUAGE_WORDS) if (rx.test(ln.text)) hits[lang]++;
+  if (hits.fr > hits.en && hits.fr >= hits.es) return "fr";
+  if (hits.es > hits.en && hits.es > hits.fr) return "es";
+  return "en";
 }
 
 export function classifyPage(page: PageData, scaleTexts: string[] = []): PageClassification {
@@ -282,5 +342,5 @@ export function classifyPage(page: PageData, scaleTexts: string[] = []): PageCla
   const texts = [title ?? "", ...viewTitles.map((vt) => vt.text)];
   const floor = pageType === "floor_plan" || pageType === "detail" ? detectFloor(texts) : null;
   const [unit, basis] = detectDefaultUnit(page, scaleTexts);
-  return { pageType, confidence: conf, signals, secondaryTypes: secondary, sheetNumber: number, sheetTitle: title, floor, titleBlock: tb, defaultUnit: unit, unitBasis: basis };
+  return { pageType, confidence: conf, signals, secondaryTypes: secondary, sheetNumber: number, sheetTitle: title, floor, titleBlock: tb, defaultUnit: unit, unitBasis: basis, language: detectLanguage(page) };
 }

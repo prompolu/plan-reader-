@@ -55,8 +55,18 @@ export function assignTags(openings: OpeningDetection[], tags: TagDetection[], c
       const centred = off <= 0.25 * w + ctx.units(150);
       // tags sit on the line through the opening centre, perpendicular to the wall
       const centring = Math.max(0.3, 1 - off / (0.6 * w + ctx.units(100)));
-      const s = Math.exp(-d / scaleD) * centring * kindCompat(t.prefix, o.kind);
-      pairs.push([s, t, o, d, aligned, centred]);
+      let s = Math.exp(-d / scaleD) * centring * kindCompat(t.prefix, o.kind);
+      let onLeader = false;
+      if (t.leaderTo) {
+        // the tag's leader line points at this opening
+        const dl = o.bbox.distanceTo(new BBox(t.leaderTo[0], t.leaderTo[1], 0, 0));
+        const sl = Math.exp(-dl / ctx.units(300)) * Math.max(0.6, kindCompat(t.prefix, o.kind));
+        if (sl > s) {
+          s = sl;
+          onLeader = dl < ctx.units(300);
+        }
+      }
+      pairs.push([s, t, o, d, aligned || onLeader, centred || onLeader]);
     }
   }
   pairs = sortedBy(pairs, (p) => -p[0]);

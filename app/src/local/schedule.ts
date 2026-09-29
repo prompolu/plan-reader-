@@ -11,7 +11,7 @@ import type { MeasurementRow, OpeningRow } from "./db";
 const FAMILIES: [string, string, Set<string>][] = [
   ["windows", "WINDOW SCHEDULE", new Set(["window", "sliding_window", "curtain_wall"])],
   ["doors", "DOOR SCHEDULE", new Set(["door", "double_door", "sliding_door", "garage_door"])],
-  ["other", "OTHER OPENINGS", new Set(["opening", "other"])],
+  ["other", "OTHER OPENINGS", new Set(["opening", "railing", "other"])],
 ];
 export const GROUP_BY = ["type", "tag", "size", "page", "floor"] as const;
 

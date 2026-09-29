@@ -1,5 +1,5 @@
 /** Opening tag detection (D-01, W03, SD-1, GD-01, ...). */
-import { BBox, type PageData, type Segment, type TagDetection, type TextLine, type View } from "./types";
+import { BBox, type PageData, type Pt, type Segment, type TagDetection, type TextLine, type View } from "./types";
 import { normalizeChars } from "./units";
 import { viewOf } from "./views";
 
@@ -7,6 +7,7 @@ import { viewOf } from "./views";
 export const TAG_PREFIXES: Record<string, string> = {
   D: "door",
   DR: "door",
+  DT: "door", // door type
   DD: "double_door",
   ED: "door",
   FD: "door",
@@ -16,11 +17,32 @@ export const TAG_PREFIXES: Record<string, string> = {
   W: "window",
   WN: "window",
   WD: "window",
+  WT: "window", // window type
   WIN: "window",
   SW: "sliding_window",
   CW: "curtain_wall",
   OP: "opening",
+  // French: porte, fenêtre, porte-fenêtre, châssis, baie vitrée, porte de garage, porte / fenêtre coulissante, mur-rideau
+  P: "door",
+  F: "window",
+  PF: "door",
+  CH: "window",
+  BV: "sliding_window",
+  PG: "garage_door",
+  PC: "sliding_door",
+  FC: "sliding_window",
+  MR: "curtain_wall",
+  GC: "railing", // garde-corps
+  // Spanish: ventana, puerta-ventana
+  V: "window",
+  PV: "door",
 };
+
+/** What a prefix means on drawings in another language, where it differs. */
+const PREFIX_BY_LANGUAGE: Record<string, Record<string, string>> = {
+  fr: { GD: "railing" }, // garde-corps (a GD on a French drawing is never a garage door)
+};
+
 export const PREFIX_ALIASES: Record<string, string> = { DR: "D", WN: "W", WD: "W", WIN: "W" };
 
 export const RE_TAG = /(?<![A-Za-z0-9])(?<prefix>[A-Z]{1,3})[-.\s]?(?<num>\d{1,3})(?<suffix>[A-Z]?)(?![A-Za-z0-9])/g;
@@ -40,8 +62,9 @@ export function parseTag(text: string): [string, string, string] | null {
   return [m.groups!.prefix, tagKey(m.groups!.prefix, m.groups!.num, m.groups!.suffix), t];
 }
 
-export function tagClass(prefix: string): string {
-  return TAG_PREFIXES[prefix.toUpperCase()] ?? "other";
+export function tagClass(prefix: string, language?: string): string {
+  const p = prefix.toUpperCase();
+  return (language && PREFIX_BY_LANGUAGE[language]?.[p]) ?? TAG_PREFIXES[p] ?? "other";
 }
 
 export function* tagMatches(s: string): Generator<RegExpExecArray> {
@@ -116,6 +139,79 @@ function standsAlone(s: string, m: RegExpExecArray): boolean {
 
 export function isTagText(ln: TextLine): boolean {
   return parseTag(ln.text) !== null;
+}
+
+/**
+ * Leader lines: a thin line (sometimes with a bend) drawn from a tag to the
+ * element it names, when the tag cannot sit right next to it. Records where
+ * each tag's leader ends.
+ */
+export function findLeaders(page: PageData, tags: TagDetection[], exclude: Set<Segment>): void {
+  if (!tags.length) return;
+  const segs = page.geometry.segments.filter((s) => !exclude.has(s) && s.length > 1);
+  const widths = segs.filter((s) => s.length > 20 && s.width > 0).map((s) => s.width);
+  const heavy = widths.length ? Math.max(...widths) : Infinity;
+  const near = (p: Pt, b: BBox, tol: number) => b.expand(tol).containsPoint(p[0], p[1]);
+  for (const t of tags) {
+    // a tag drawn in a symbol (circle, hexagon, box) sits at its opening; leaders go with bare text tags
+    if (t.enclosure) {
+      t.leaderTo = null;
+      continue;
+    }
+    const box = t.bbox;
+    const h = Math.max(t.bbox.h, 1);
+    const tol = Math.max(2, 0.8 * h);
+    let best: [number, Pt] | null = null;
+    for (const s of segs) {
+      if (s.length < 1.2 * h || s.length > 30 * h || (s.width > 0 && s.width >= heavy && heavy > 0)) continue;
+      const a: Pt = [s.x0, s.y0];
+      const b: Pt = [s.x1, s.y1];
+      let from: Pt | null = null;
+      let to: Pt | null = null;
+      if (near(a, box, tol) && !near(b, box, tol)) [from, to] = [a, b];
+      else if (near(b, box, tol) && !near(a, box, tol)) [from, to] = [b, a];
+      if (!from || !to) continue;
+      // a line crossing the tag (hatch, grid) is not its leader
+      if (box.containsPoint((from[0] + to[0]) / 2, (from[1] + to[1]) / 2)) continue;
+      const o = s.orientation(1);
+      if (o !== null) {
+        // grid and hatch lines are interrupted around text: the same straight line
+        // carrying on at the other side of the tag is not a leader
+        const cc = s.crossCoord(o);
+        const continues = segs.some(
+          (x) =>
+            x !== s &&
+            x.orientation(1) === o &&
+            Math.abs(x.crossCoord(o) - cc) < 0.5 &&
+            (near([x.x0, x.y0], box, tol + h) || near([x.x1, x.y1], box, tol + h)) &&
+            sideOf(x, box, o) !== sideOf(s, box, o),
+        );
+        if (continues) continue;
+      }
+      // follow a bend: another thin line starting where this one ends
+      let end = to;
+      let reach = s.length;
+      for (let k = 0; k < 2; k++) {
+        const cont = segs.find((x) => x !== s && x.length > 1 && x.length < 30 * h && (Math.hypot(x.x0 - end[0], x.y0 - end[1]) < 0.5 || Math.hypot(x.x1 - end[0], x.y1 - end[1]) < 0.5));
+        if (!cont) break;
+        const nxt: Pt = Math.hypot(cont.x0 - end[0], cont.y0 - end[1]) < 0.5 ? [cont.x1, cont.y1] : [cont.x0, cont.y0];
+        if (near(nxt, box, tol)) break;
+        end = nxt;
+        reach += cont.length;
+      }
+      // leaders are usually drawn at an angle; a straight horizontal/vertical one ranks lower
+      const rank = reach * (o === null ? 2 : 1);
+      if (best === null || rank > best[0]) best = [rank, end];
+    }
+    t.leaderTo = best ? best[1] : null;
+  }
+}
+
+/** Which side of the box a horizontal (-1 left / +1 right) or vertical (-1 above / +1 below) line lies on. */
+function sideOf(s: Segment, box: BBox, o: "h" | "v"): number {
+  const mid = o === "h" ? (s.x0 + s.x1) / 2 : (s.y0 + s.y1) / 2;
+  const c = o === "h" ? box.cx : box.cy;
+  return Math.sign(mid - c);
 }
 
 /** Segments that form tag symbols - annotation, not building geometry. */

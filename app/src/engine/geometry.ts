@@ -179,7 +179,87 @@ export function extractVectorGeometry(drawings: DrawingPath[]): PageGeometry {
     if (!isArrowhead) g.segments.push(...pathSegs);
     if (curves.length) curvesToArcs(curves, g, pid, fill);
   });
+  polylineArcs(g);
   return g;
+}
+
+/**
+ * Arcs drawn as chains of short straight lines (some CAD exports, e.g. Revit,
+ * write door swings that way): chains that turn steadily one way around a
+ * common centre become arcs, like the curved ones.
+ */
+export function polylineArcs(g: PageGeometry): void {
+  const short = g.segments.filter((s) => s.length > 0.05 && s.length < 25);
+  if (short.length < 4) return;
+  const key = (x: number, y: number) => `${Math.round(x * 20)}|${Math.round(y * 20)}`;
+  const at = new Map<string, Segment[]>();
+  for (const s of short) {
+    for (const k of [key(s.x0, s.y0), key(s.x1, s.y1)]) {
+      const l = at.get(k);
+      if (l) l.push(s);
+      else at.set(k, [s]);
+    }
+  }
+  const seen = new Set<Segment>();
+  const other = (s: Segment, k: string): Pt => (key(s.x0, s.y0) === k ? [s.x1, s.y1] : [s.x0, s.y0]);
+  const next = (s: Segment, p: Pt): Segment | null => {
+    const l = at.get(key(p[0], p[1])) ?? [];
+    const cands = l.filter((x) => x !== s);
+    return cands.length === 1 && l.length === 2 ? cands[0] : null;
+  };
+  for (const s0 of short) {
+    if (seen.has(s0)) continue;
+    // walk both ways from s0 through points shared by exactly two short segments
+    const pts: Pt[] = [
+      [s0.x0, s0.y0],
+      [s0.x1, s0.y1],
+    ];
+    const segs = [s0];
+    seen.add(s0);
+    for (const dir of [1, -1]) {
+      let cur = s0;
+      let p: Pt = dir === 1 ? [s0.x1, s0.y1] : [s0.x0, s0.y0];
+      for (let n = 0; n < 200; n++) {
+        const nx = next(cur, p);
+        if (!nx || seen.has(nx)) break;
+        seen.add(nx);
+        const q = other(nx, key(p[0], p[1]));
+        if (dir === 1) pts.push(q);
+        else pts.unshift(q);
+        segs.push(nx);
+        cur = nx;
+        p = q;
+      }
+    }
+    if (segs.length < 4) continue;
+    // steady turning in one direction
+    let total = 0;
+    let sign = 0;
+    let ok = true;
+    for (let i = 1; i + 1 < pts.length; i++) {
+      const a1 = Math.atan2(pts[i][1] - pts[i - 1][1], pts[i][0] - pts[i - 1][0]);
+      const a2 = Math.atan2(pts[i + 1][1] - pts[i][1], pts[i + 1][0] - pts[i][0]);
+      const d = pmod(a2 - a1 + Math.PI, 2 * Math.PI) - Math.PI;
+      const sg = Math.sign(d);
+      if (Math.abs(d) < 1e-3 || Math.abs(d) > (35 * Math.PI) / 180 || (sign && sg !== sign)) {
+        ok = false;
+        break;
+      }
+      sign = sg;
+      total += d;
+    }
+    const sweep = degrees(Math.abs(total)) + degrees(Math.abs(total)) / Math.max(pts.length - 2, 1);
+    if (!ok || sweep < 40 || sweep > 200) continue;
+    const c = circleFrom3(pts[0], pts[Math.floor(pts.length / 2)], pts[pts.length - 1]);
+    if (!c) continue;
+    const [cx, cy, r] = c;
+    if (r < 3 || Math.max(...pts.map(([x, y]) => Math.abs(Math.hypot(x - cx, y - cy) - r))) > 0.04 * r + 0.1) continue;
+    const a0 = Math.atan2(pts[0][1] - cy, pts[0][0] - cx);
+    const a1 = Math.atan2(pts[pts.length - 1][1] - cy, pts[pts.length - 1][0] - cx);
+    let sw = Math.abs(degrees(pmod(a1 - a0 + Math.PI, 2 * Math.PI) - Math.PI));
+    if (sweep > 180) sw = 360 - sw;
+    g.arcs.push(new Arc(cx, cy, r, pts[0], pts[pts.length - 1], sw, segs[0].pathId));
+  }
 }
 
 function curvesToArcs(curves: Ctrl[], g: PageGeometry, pid: number, filled: boolean): void {

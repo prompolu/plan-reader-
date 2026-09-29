@@ -71,6 +71,24 @@ kept exactly as drawn.
    trail in one file. **Open project file** brings it back (if the project is
    already in the app you choose: replace it, or open it as a copy).
 
+Drawings from different offices and countries are read, including French /
+Moroccan and Spanish practice:
+
+* view names and title blocks in English, French and Spanish (*PLAN REZ DE
+  CHAUSSEE*, *PLAN ETAGE*, *FACADE*, *COUPE*, *PLAN DE MASSE*, *Titre*,
+  *Echelle*, *PLANTA BAJA* …), floors named from them;
+* dimensions in millimetres, centimetres (`340.0`) or metres (`3.45`, `0,90`),
+  from the drawing's note (*Toutes les dimensions sont exprimées en
+  centimètres*) or from the way the numbers are written;
+* opening tags such as `W-01`, `WT19`, `F1`, `P2`, `PF1`; `GD` is a
+  *garde-corps* (railing) on a French drawing;
+* door and window tables with French / Spanish headers (*Repère, Largeur,
+  Hauteur, Nombre* …), and type legends where each type is drawn once with its
+  tag, its size and its count (*WT 16 / 260 x 130 cm / Nombre : 1*);
+* fill patterns (brick, tiles) are ignored; door swings exported as chains of
+  short lines are recognised; tags joined to their opening by a leader line
+  are followed.
+
 Rules the extractor follows:
 
 * **Never invent a measurement.** Missing values are shown as *Needs review*.
@@ -138,6 +156,7 @@ npm test             # unit + app-layer tests (IndexedDB and the engine run in N
 npm run build:e2e && npm run e2e    # the built app in Chromium (test build: also accepts the test key)
 npm run benchmark    # extraction accuracy on the 31 vector drawing sets
 npm run benchmark:scans             # accuracy on the scanned drawings
+npx tsx scripts/analyze-drawing.ts plan.pdf   # what the engine reads on a drawing, page by page
 npm run check:keys   # after `npm run build`: vendor key in, test key out
 npm run desktop      # build and start the desktop app
 npm run dist:win     # Windows installer (on Windows)  → app/release/

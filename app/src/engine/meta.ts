@@ -1,6 +1,6 @@
 /** Engine constants with no dependencies (safe to import on the UI thread). */
 
-export const EXTRACTION_VERSION = "1.4.0";
+export const EXTRACTION_VERSION = "1.5.0";
 
 /** user-facing processing steps (id, label) */
 export const STEPS: [string, string][] = [

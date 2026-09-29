@@ -10,17 +10,18 @@ import { normalizeChars, parseDimension, parseSize } from "./units";
 import { mean, median, sortedBy } from "./py";
 
 const HEADER_ALIASES: [string, RegExp][] = [
-  ["tag", /^(MARK|TAG|NO\.?|NUMBER|REF\.?|ID|DOOR\s*(NO|MARK)\.?|WINDOW\s*(NO|MARK)\.?|CODE)$/i],
-  ["type", /^(TYPE|DESCRIPTION|DESC\.?|STYLE|OPERATION)$/i],
-  ["width", /^(WIDTH|W|WIDTH\s*\(MM\)|W\s*\(MM\))$/i],
-  ["height", /^(HEIGHT|H|HEIGHT\s*\(MM\)|H\s*\(MM\))$/i],
-  ["size", /^(SIZE|SIZE\s*\(W\s*[xX]\s*H\)|OPENING\s+SIZE|W\s*[xX]\s*H|NOMINAL\s+SIZE|SIZE\s*\(MM\))$/i],
-  ["qty", /^(QTY\.?|QUANTITY|NO\.?\s*OFF|COUNT|NUMBER\s+OFF)$/i],
-  ["sill", /^(SILL|SILL\s+HEIGHT|SILL\s+HT\.?)$/i],
-  ["remarks", /^(REMARKS|NOTES|COMMENTS|HARDWARE|FINISH|FRAME|GLAZING|LOCATION|ROOM)$/i],
+  ["tag", /^(MARK|TAG|NO\.?|NUMBER|REF\.?|ID|DOOR\s*(NO|MARK)\.?|WINDOW\s*(NO|MARK)\.?|CODE|REP[EÈ]RE|R[EÉ]F[EÉ]RENCE|R[EÉ]F\.?|N[°º]|MARCA|C[OÓ]DIGO)$/i],
+  ["type", /^(TYPE|DESCRIPTION|DESC\.?|STYLE|OPERATION|D[EÉ]SIGNATION|TIPO|DESCRIPCI[OÓ]N|OUVRANT)$/i],
+  ["width", /^(WIDTH|W|WIDTH\s*\(MM\)|W\s*\(MM\)|LARGEUR|L|LARG\.?|ANCHO|ANCHURA|A)(\s*\((MM|CM|M)\))?$/i],
+  ["height", /^(HEIGHT|H|HEIGHT\s*\(MM\)|H\s*\(MM\)|HAUTEUR|HAUT\.?|ALTO|ALTURA)(\s*\((MM|CM|M)\))?$/i],
+  ["size", /^(SIZE|SIZE\s*\(W\s*[xX]\s*H\)|OPENING\s+SIZE|W\s*[xX]\s*H|NOMINAL\s+SIZE|SIZE\s*\(MM\)|DIMENSIONS?|DIM\.?|L\s*[xX]\s*H|MEDIDAS|DIMENSIONES)(\s*\((MM|CM|M)\))?$/i],
+  ["qty", /^(QTY\.?|QUANTITY|NO\.?\s*OFF|COUNT|NUMBER\s+OFF|NOMBRE|NBRE\.?|NB\.?|QT[EÉ]\.?|QUANTIT[EÉ]|CANTIDAD|UDS?\.?|UNIDADES)$/i],
+  ["sill", /^(SILL|SILL\s+HEIGHT|SILL\s+HT\.?|ALL[EÈ]GE|ANTEPECHO)$/i],
+  ["remarks", /^(REMARKS|NOTES|COMMENTS|HARDWARE|FINISH|FRAME|GLAZING|LOCATION|ROOM|OBSERVATIONS?|OBS\.?|MAT[EÉ]RIAU|VITRAGE|LOCAL|OBSERVACIONES|ACABADO)$/i],
 ];
 
-const RE_SCHEDULE_TITLE = /\b(DOOR|WINDOW|OPENING|DOOR\s*(?:AND|&)\s*WINDOW)S?\s+SCHEDULES?\b/i;
+const RE_SCHEDULE_TITLE =
+  /(?<![\p{L}])((DOOR|WINDOW|OPENING|DOOR\s*(?:AND|&)\s*WINDOW)S?\s+SCHEDULES?|(TABLEAU|NOMENCLATURE|CARNET|LISTE)\s+DES\s+(MENUISERIES|PORTES|FEN[EÊ]TRES|OUVERTURES)|(CUADRO|MEMORIA|RESUMEN)\s+DE\s+(CARPINTER[IÍ]AS?|PUERTAS|VENTANAS))(?![\p{L}])/iu;
 
 function headerKind(text: string): string | null {
   const t = normalizeChars(text).trim();
@@ -37,8 +38,10 @@ export function extractSchedules(page: PageData, _views: View[], cls: PageClassi
   for (const title of titles) {
     let kind: ScheduleEntry["scheduleKind"] = "opening";
     const t = title.text.toUpperCase();
-    if (t.includes("DOOR") && !t.includes("WINDOW")) kind = "door";
-    else if (t.includes("WINDOW") && !t.includes("DOOR")) kind = "window";
+    const door = /DOOR|PORTES|PUERTAS/.test(t);
+    const win = /WINDOW|FEN[EÊ]TRES|VENTANAS/.test(t);
+    if (door && !win) kind = "door";
+    else if (win && !door) kind = "window";
     const header = findHeader(lines, title);
     if (!header) continue;
     const cols = sortedBy(header, (h) => h[1].bbox.x0);
@@ -87,9 +90,14 @@ export function extractSchedules(page: PageData, _views: View[], cls: PageClassi
       }
       if (width === null && "width" in cells) width = parseDimension(cells.width, unit)?.toDict() ?? null;
       if (height === null && "height" in cells) height = parseDimension(cells.height, unit)?.toDict() ?? null;
+      if (width === null && height === null && "size" in cells) {
+        const pair = parseLegendSize(cells.size, unit);
+        if (pair) [width, height] = pair;
+      }
       let qty: number | null = null;
       const qtxt = cells.qty ?? null;
-      if (qtxt && /^\d{1,4}$/.test(qtxt.trim())) qty = parseInt(qtxt.trim(), 10);
+      const qm = qtxt ? /^(\d{1,4})\s*(u|u\.|pcs?|unit[eé]s?|uds?\.?)?$/i.exec(qtxt.trim()) : null;
+      if (qm) qty = parseInt(qm[1], 10);
       let rb: BBox = row[0].bbox;
       for (const ln of row.slice(1)) rb = rb.union(ln.bbox);
       // (as in the original: the source of the last cell line decides the base confidence)
@@ -127,6 +135,111 @@ export function extractSchedules(page: PageData, _views: View[], cls: PageClassi
     }
   }
   return uniq;
+}
+
+const RE_QTY_LINE = /^(NOMBRE|NBRE\.?|NB\.?|QT[EÉ]\.?|QUANTIT[EÉ]|QTY\.?|QUANTITY|NO\.?\s*OFF|CANTIDAD|UDS?\.?|UNIDADES)\s*[:=]?\s*(\d{1,4})\s*(u|u\.|pcs?|unit[eé]s?|uds?\.?)?$/i;
+
+/**
+ * A size written as "260 x 130 cm", "90/210", "L=90 H=210" or "L 0,90 x H 2,10".
+ * Width first, as architects write it.
+ */
+export function parseLegendSize(text: string, unit: string): [ParsedMeasurement, ParsedMeasurement] | null {
+  const t = normalizeChars(text).trim();
+  const pair = parseSize(t.replace(/^(DIM(ENSIONS?)?\.?|SIZE|MEDIDAS)\s*[:=]?\s*/i, ""), unit);
+  if (pair) return [pair[0].toDict(), pair[1].toDict()];
+  const m =
+    /^(?:L\s*[:=]?\s*)?(\d{1,5}(?:[.,]\d{1,3})?)\s*(mm|cm|m)?\s*[/xX]\s*(?:H\s*[:=]?\s*)?(\d{1,5}(?:[.,]\d{1,3})?)\s*(mm|cm|m)?$/i.exec(t) ??
+    /^(?:L|LARG(?:EUR)?|W|ANCHO)\s*[:=]\s*(\d{1,5}(?:[.,]\d{1,3})?)\s*(mm|cm|m)?[\s,;-]+(?:H|HAUT(?:EUR)?|ALTO)\s*[:=]\s*(\d{1,5}(?:[.,]\d{1,3})?)\s*(mm|cm|m)?$/i.exec(t);
+  if (!m) return null;
+  const u = (m[2] ?? m[4] ?? "").toLowerCase();
+  const withUnit = (v: string) => (u ? `${v} ${u}` : v);
+  const w = parseDimension(withUnit(m[1]), unit);
+  const h = parseDimension(withUnit(m[3]), unit);
+  if (!w || !h) return null;
+  // keep what was written on the drawing
+  return [{ ...w.toDict(), original_text: m[1] + (m[2] ?? "") }, { ...h.toDict(), original_text: m[3] + (m[4] ?? "") }];
+}
+
+/**
+ * Type legends: each opening type drawn once with its tag, its size and its
+ * count underneath ("WT 16 / 260 x 130 cm / Nombre : 1") instead of a table.
+ * Returns the entries and the tag lines they use (those are not plan tags).
+ */
+export function extractLegendEntries(page: PageData, cls: PageClassification): [ScheduleEntry[], TextLine[]] {
+  const tb = cls.titleBlock;
+  const lines = page.lines.filter((ln) => !(tb && tb.contains(ln.bbox, 2)) && ln.axis === "h");
+  const entries: ScheduleEntry[] = [];
+  const used: TextLine[] = [];
+  let n = 0;
+  for (const tagLine of lines) {
+    const parsed = parseTag(tagLine.text);
+    if (!parsed) continue;
+    const size = Math.max(tagLine.size, tagLine.bbox.h, 1);
+    // the lines stacked right under the tag, roughly centred or left-aligned on it
+    const below = sortedBy(
+      lines.filter(
+        (ln) =>
+          ln !== tagLine &&
+          ln.bbox.cy > tagLine.bbox.cy &&
+          ln.bbox.y0 - tagLine.bbox.y1 < 3.2 * size &&
+          (Math.abs(ln.bbox.cx - tagLine.bbox.cx) < Math.max(2.5 * tagLine.bbox.w, 4 * size) || Math.abs(ln.bbox.x0 - tagLine.bbox.x0) < 2 * size),
+      ),
+      (ln) => ln.bbox.cy,
+    ).slice(0, 3);
+    let dims: [ParsedMeasurement, ParsedMeasurement] | null = null;
+    let qty: number | null = null;
+    let qtyText: string | null = null;
+    const block: TextLine[] = [tagLine];
+    for (const ln of below) {
+      if (parseTag(ln.text)) break; // the next type's tag
+      const q = RE_QTY_LINE.exec(normalizeChars(ln.text).trim());
+      if (q && qty === null) {
+        qty = parseInt(q[2], 10);
+        qtyText = ln.text.trim();
+        block.push(ln);
+        continue;
+      }
+      const d: [ParsedMeasurement, ParsedMeasurement] | null = dims === null ? parseLegendSize(ln.text, cls.defaultUnit) : null;
+      if (d) {
+        dims = d;
+        block.push(ln);
+      }
+    }
+    // a tag with a count under it is a legend entry; a tag with only a size next to
+    // it may be a size callout on the plan itself, so it needs to stand apart (large text)
+    if (qty === null && (dims === null || tagLine.size < 1.6 * medianTagSize(lines))) continue;
+    const [, key, tagText] = parsed;
+    let rb: BBox = tagLine.bbox;
+    for (const ln of block.slice(1)) rb = rb.union(ln.bbox);
+    let conf = tagLine.source === "pdf" ? 0.93 : 0.8 * mean(block.map((x) => x.confidence));
+    if (dims === null) conf *= 0.85;
+    entries.push({
+      id: `p${page.index}-l${n}`,
+      pageIndex: page.index,
+      scheduleKind: "opening",
+      // the legend has no title on the drawing: name it in the drawing's language
+      scheduleTitle: ({ fr: "Légende des types", es: "Leyenda de tipos" } as Record<string, string>)[cls.language ?? "en"] ?? "Type legend",
+      tag: tagText,
+      tagKey: key,
+      typeText: null,
+      width: dims ? dims[0] : null,
+      height: dims ? dims[1] : null,
+      quantity: qty,
+      quantityText: qtyText,
+      remarks: null,
+      rowBBox: rb,
+      cells: Object.fromEntries(block.map((ln, i) => [i === 0 ? "tag" : RE_QTY_LINE.test(ln.text.trim()) ? "qty" : "size", ln.text.trim()])),
+      confidence: conf,
+    });
+    used.push(tagLine);
+    n++;
+  }
+  return [entries, used];
+}
+
+function medianTagSize(lines: TextLine[]): number {
+  const sizes = lines.filter((ln) => parseTag(ln.text)).map((ln) => ln.size);
+  return sizes.length ? median(sizes) : 1;
 }
 
 /** Header cells in the band just below the schedule title. */

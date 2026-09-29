@@ -385,6 +385,8 @@ export interface PageClassification {
   titleBlock: BBox | null;
   defaultUnit: string;
   unitBasis: string;
+  /** Language of the drawing's text: decides what some tag prefixes mean (GD: garage door / garde-corps). */
+  language?: "en" | "fr" | "es";
 }
 
 export function classificationToDict(c: PageClassification) {
@@ -416,6 +418,8 @@ export interface TagDetection {
   lineId: string;
   viewId: string | null;
   enclosureBBox: BBox | null;
+  /** where the tag's leader line (a thin line drawn from the tag to its element) ends */
+  leaderTo?: Pt | null;
 }
 
 export function tagToDict(t: TagDetection) {
@@ -429,6 +433,7 @@ export function tagToDict(t: TagDetection) {
     confidence: pyRound(t.confidence, 3),
     enclosure: t.enclosure,
     view_id: t.viewId,
+    ...(t.leaderTo ? { leader_to: [pyRound(t.leaderTo[0], 2), pyRound(t.leaderTo[1], 2)] } : {}),
   };
 }
 
@@ -531,6 +536,7 @@ export const OPENING_TYPE_LABELS: Record<string, string> = {
   sliding_window: "Sliding window",
   garage_door: "Garage door",
   curtain_wall: "Curtain wall",
+  railing: "Railing",
   opening: "Opening",
   other: "Other",
 };

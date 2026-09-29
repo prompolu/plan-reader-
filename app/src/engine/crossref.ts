@@ -15,7 +15,7 @@ import { BBox, OPENING_TYPE_LABELS, PAGE_TYPE_LABELS, evidence, scheduleToDict, 
 import { approxEqualMm, formatLength } from "./units";
 import { cmpTuple, maxBy, pyPercent, pyRound, pyTitle, sortedBy, sortedStrings, type Tuple } from "./py";
 
-const KIND_ORDER = ["window", "sliding_window", "curtain_wall", "door", "double_door", "sliding_door", "garage_door", "opening", "other"];
+const KIND_ORDER = ["window", "sliding_window", "curtain_wall", "door", "double_door", "sliding_door", "garage_door", "railing", "opening", "other"];
 
 export interface PageContext {
   index: number;
@@ -27,6 +27,7 @@ export interface PageContext {
   poorQuality: boolean;
   qualityReasons: string[];
   label: string;
+  language?: string;
 }
 
 export function pageRef(p: PageContext): string {
@@ -416,8 +417,9 @@ function record(key: string | null, group: Appearance[], sched: ScheduleEntry | 
   let tagText: string | null = null;
   if (instances.length && instances[0].det.tag) tagText = instances[0].det.tag.text;
   else if (refs.length && refs[0].det.tag) tagText = refs[0].det.tag.text;
-  else if (sched) tagText = sched.tag;
+  // as written on the plan ("WT13") rather than in a legend ("WT 13")
   else if (orphans.length) tagText = orphans[0][0].text;
+  else if (sched) tagText = sched.tag;
 
   // tags found on plans with no opening geometry: still evidence of an opening
   const geoMissing = orphans.filter(([, vt]) => vt === "floor_plan").map(([t]) => t);
@@ -440,7 +442,8 @@ function record(key: string | null, group: Appearance[], sched: ScheduleEntry | 
     const m = /^([A-Z]+)/.exec((tagText ?? "").toUpperCase());
     prefix = m ? m[1] : null;
   }
-  const tclass = prefix ? tagClass(prefix) : null;
+  const pageIdx = [...instances, ...refs][0]?.det.pageIndex ?? sched?.pageIndex ?? orphans[0]?.[0].pageIndex;
+  const tclass = prefix ? tagClass(prefix, pageIdx !== undefined ? pages.get(pageIdx)?.language : undefined) : null;
   let kind = votes.size ? maxBy([...votes.keys()], (k) => votes.get(k)!) : tclass || "other";
   const schedKind = sched ? scheduleTypeKind(sched.typeText, sched.scheduleKind, prefix ?? "") : null;
   if (tclass && tclass !== "other") {
@@ -451,7 +454,7 @@ function record(key: string | null, group: Appearance[], sched: ScheduleEntry | 
       if (geoFamily !== "opening") flags.push(flag("unclear_type", `Tag prefix '${prefix}' suggests a ${family}, but the drawing symbol looks like a ${(OPENING_TYPE_LABELS[kind] ?? kind).toLowerCase()}`, { field: "type" }));
       kind = tclass in OPENING_TYPE_LABELS ? tclass : family;
     } else if (!["door", "window", "opening"].includes(tclass)) {
-      kind = tclass; // SD/GD/SW/CW prefixes are specific
+      kind = tclass; // SD/GD/SW/CW/GC prefixes are specific
     }
   }
   if (schedKind) kind = schedKind;
