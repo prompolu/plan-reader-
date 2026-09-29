@@ -19,6 +19,7 @@ export class Grid {
 
   /** 8-connected Bresenham line between integer points (cv2.line, thickness 1). */
   line(x0: number, y0: number, x1: number, y1: number): void {
+    if (![x0, y0, x1, y1].every(Number.isFinite)) return;
     const dx = Math.abs(x1 - x0);
     const dy = -Math.abs(y1 - y0);
     const sx = x0 < x1 ? 1 : -1;

@@ -127,9 +127,12 @@ function components(cv: CV, bin: Uint8Array, w: number, h: number): { x: number;
   const cents = new cv.Mat();
   const n = cv.connectedComponentsWithStats(m, labels, stats, cents, 8, cv.CV_32S);
   const out = [];
+  // read the raw int32 buffer: per-row accessors return only the first column in some builds
+  const st: Int32Array = stats.data32S;
+  const cols = stats.cols;
   for (let i = 1; i < n; i++) {
-    const s = stats.intPtr(i, 0);
-    out.push({ x: s[0], y: s[1], w: s[2], h: s[3], area: s[4] });
+    const o = i * cols;
+    out.push({ x: st[o], y: st[o + 1], w: st[o + 2], h: st[o + 3], area: st[o + 4] });
   }
   m.delete();
   labels.delete();
@@ -260,8 +263,9 @@ export async function extractRasterGeometry(gray: GrayImage, unitPerPx = 1, mask
   for (const s of segs) cv.line(residual, new cv.Point(Math.trunc(s.x0), Math.trunc(s.y0)), new cv.Point(Math.trunc(s.x1), Math.trunc(s.y1)), new cv.Scalar(0), Math.max(3, Math.trunc(s.width) + 2));
   const hl = new cv.Mat();
   cv.HoughLinesP(residual, hl, 1, Math.PI / 180, 8, Math.max(5, Math.floor(minLen / 2)), 2);
+  const hd: Int32Array = hl.data32S;
   for (let i = 0; i < hl.rows; i++) {
-    const [x0, y0, x1, y1] = hl.intPtr(i, 0);
+    const [x0, y0, x1, y1] = [hd[4 * i], hd[4 * i + 1], hd[4 * i + 2], hd[4 * i + 3]];
     const s = new Segment(x0, y0, x1, y1, 1);
     if (s.orientation(8) === null && s.length < minLen * 4) segs.push(s);
   }
@@ -278,10 +282,8 @@ export async function extractRasterGeometry(gray: GrayImage, unitPerPx = 1, mask
       continue;
     }
     const pts: [number, number][] = [];
-    for (let k = 0; k < c.rows; k++) {
-      const p = c.intPtr(k, 0);
-      pts.push([p[0], p[1]]);
-    }
+    const cd: Int32Array = c.data32S;
+    for (let k = 0; k < c.rows; k++) pts.push([cd[2 * k], cd[2 * k + 1]]);
     const br = cv.boundingRect(c);
     c.delete();
     if (Math.max(br.width, br.height) < minLen) continue;
@@ -321,10 +323,8 @@ export async function extractRasterGeometry(gray: GrayImage, unitPerPx = 1, mask
     const fillRatio = area / Math.max(br.width * br.height, 1);
     if (approx.rows === 3 && fillRatio > 0.3) {
       const pts: [number, number][] = [];
-      for (let k = 0; k < 3; k++) {
-        const p = approx.intPtr(k, 0);
-        pts.push([p[0] * unitPerPx, p[1] * unitPerPx]);
-      }
+      const ad: Int32Array = approx.data32S;
+      for (let k = 0; k < 3; k++) pts.push([ad[2 * k] * unitPerPx, ad[2 * k + 1] * unitPerPx]);
       g.fills.push(new FilledShape(pts, "triangle"));
     }
     approx.delete();
