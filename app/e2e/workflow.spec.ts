@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
+import { activate } from "./license-helper";
 
 const PDF = fileURLToPath(new URL("./fixtures/residential_plans.pdf", import.meta.url));
 const SCAN = fileURLToPath(new URL("../benchmark/raster/demo_p4.png", import.meta.url));
@@ -14,6 +15,9 @@ function watchNetwork(page: Page, base: string) {
   });
   return outside;
 }
+
+// every browser profile in these tests is an activated device
+test.beforeEach(async ({ context }) => activate(context));
 
 function watchErrors(page: Page) {
   const errors: string[] = [];
@@ -120,6 +124,7 @@ test("projects are private to the browser profile they were created in", async (
   await expect(page.getByText("Extraction complete")).toBeVisible({ timeout: 180_000 });
 
   const other = await browser.newContext();
+  await activate(other);
   const stranger = await other.newPage();
   await stranger.goto("/");
   await expect(stranger.getByText("No projects yet")).toBeVisible();

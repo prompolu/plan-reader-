@@ -1,0 +1,16 @@
+{
+  "name": "PlanMeasure AI · Activation codes",
+  "short_name": "PlanMeasure Codes",
+  "description": "Makes PlanMeasure AI activation codes. The secret key stays on this device.",
+  "id": "./generator.html",
+  "start_url": "./generator.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2b2622",
+  "theme_color": "#2b2622",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

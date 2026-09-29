@@ -5,6 +5,7 @@
 import { ApiError as LocalApiError, localApi, openProjectUpload, renderRegionUrl as localRegion, uploadFiles } from "../local/api";
 import type { OpenMode } from "../local/projectData";
 import { t, tx } from "../i18n";
+import { isIOS, saveBlob } from "../lib/save";
 
 export class ApiError extends Error {
   status: number;
@@ -65,37 +66,7 @@ export async function renderRegion(projectId: string, pageId: string, x: number,
 }
 
 /** iPhone / iPad (iPadOS reports itself as a Mac with touch). */
-export function isIOS(): boolean {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-}
-
-/**
- * Save a file to the user's device: a save dialog in the desktop app, the
- * Downloads folder in a browser, the share sheet ("Save to Files") on iPhone.
- */
-export async function saveBlob(blob: Blob, filename: string): Promise<void> {
-  if (isIOS() && typeof navigator.canShare === "function") {
-    const file = new File([blob], filename, { type: blob.type || "application/octet-stream" });
-    if (navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: filename });
-        return;
-      } catch (e) {
-        if ((e as Error).name === "AbortError") return; // the user closed the share sheet
-        // otherwise (e.g. no longer allowed after a long export) fall back to a download
-      }
-    }
-  }
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.rel = "noopener";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
-}
+export { isIOS, saveBlob };
 
 /** Generate a file with the local API (PDF export, project file) and save it. */
 export async function downloadBlob(path: string, body: unknown, fallbackName: string, method = "POST"): Promise<void> {

@@ -7,7 +7,9 @@
  * opened as .planmeasure files.
  */
 const { app, BrowserWindow, Menu, dialog, ipcMain, protocol, session, shell } = require("electron");
+const { execFileSync } = require("node:child_process");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 
 const SCHEME = "app";
@@ -114,6 +116,40 @@ async function chooseProjectFile() {
     filters: [{ name: "PlanMeasure project", extensions: ["planmeasure"] }],
   });
   if (!r.canceled && r.filePaths[0]) queueFile(r.filePaths[0]);
+}
+
+// -------------------------------------------------------------------------
+// licence: what identifies this computer (its device code is derived from it)
+// -------------------------------------------------------------------------
+
+let identity = null;
+
+function machineIdentity() {
+  if (identity) return identity;
+  try {
+    if (process.platform === "darwin") {
+      const out = execFileSync("ioreg", ["-rd1", "-c", "IOPlatformExpertDevice"], { encoding: "utf8" });
+      const id = /"IOPlatformUUID"\s*=\s*"([^"]+)"/.exec(out)?.[1];
+      if (id) return (identity = `mac:${id}`);
+    } else if (process.platform === "win32") {
+      const out = execFileSync("reg", ["query", "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography", "/v", "MachineGuid", "/reg:64"], { encoding: "utf8", windowsHide: true });
+      const id = /MachineGuid\s+REG_SZ\s+(\S+)/.exec(out)?.[1];
+      if (id) return (identity = `win:${id}`);
+    } else {
+      for (const f of ["/etc/machine-id", "/var/lib/dbus/machine-id"]) {
+        try {
+          const id = fs.readFileSync(f, "utf8").trim();
+          if (id) return (identity = `linux:${id}`);
+        } catch {
+          /* next */
+        }
+      }
+    }
+  } catch {
+    /* fall through */
+  }
+  // last resort: stable for a given computer and account
+  return (identity = `host:${os.hostname()}|${os.userInfo().username}|${os.cpus()[0]?.model ?? ""}`);
 }
 
 // -------------------------------------------------------------------------
@@ -252,6 +288,10 @@ if (!app.requestSingleInstanceLock()) {
       }
     });
     ipcMain.on("pm:choose-file", () => chooseProjectFile());
+    ipcMain.handle("pm:device-identity", (e) => {
+      if (!mainWindow || e.sender !== mainWindow.webContents) throw new Error("not available");
+      return machineIdentity();
+    });
     ipcMain.on("pm:language", (_e, lang) => {
       if (MENU[lang] && lang !== menuLang) {
         menuLang = lang;

@@ -33,6 +33,14 @@ Actions**.
 Double-clicking a `.planmeasure` file opens it in the desktop app; the
 installers register the file type.
 
+**Activation.** Like Debromp, each device needs an activation code. The first
+time the app opens it shows the device's code (e.g. `7K3F-92QX-M4TB`) with
+*Copy* and *Send by WhatsApp*; Prompolu makes a permanent or yearly code for
+that device in its private generator (`generator.html`, signed with the same
+secret key as the Debromp codes) and the client pastes it in. Codes are
+checked on the device, offline; a code only works on the device it was made
+for. See [docs/LICENSING.md](docs/LICENSING.md).
+
 **Languages: English, French, Spanish.** The app starts in the device's
 language and can be switched on the welcome screen or under Settings; the
 choice is remembered. Everything follows it — screens, review flags and
@@ -104,6 +112,8 @@ app/
   src/pages, src/components   React 18 screens
   src/i18n/          English / French / Spanish: interface dictionaries and
                      templates for the engine's messages
+  src/license/       activation codes (Ed25519, device-bound), public keys,
+                     licence state; src/generator/ is the code generator page
   electron/          desktop shell (Electron 26, app:// protocol, file associations)
   e2e/               Playwright tests of the built app in Chromium
   benchmark/         ground-truth drawing sets and scans for the accuracy benchmark
@@ -124,9 +134,10 @@ cd app
 npm install
 npm run dev          # http://localhost:5173
 npm test             # unit + app-layer tests (IndexedDB and the engine run in Node)
-npm run build && npm run e2e        # the built app in Chromium
+npm run build:e2e && npm run e2e    # the built app in Chromium (test build: also accepts the test key)
 npm run benchmark    # extraction accuracy on the 31 vector drawing sets
 npm run benchmark:scans             # accuracy on the scanned drawings
+npm run check:keys   # after `npm run build`: vendor key in, test key out
 npm run desktop      # build and start the desktop app
 npm run dist:win     # Windows installer (on Windows)  → app/release/
 npm run dist:mac     # macOS dmg (on a Mac)             → app/release/

@@ -11,6 +11,8 @@ import { BAND_COLORS } from "../lib/confidence";
 import { UNIT_LABELS } from "../lib/units";
 import { t, tx } from "../i18n";
 import { LanguageSwitch } from "../components/LanguageSwitch";
+import { fmtLicenseDate } from "../components/Activation";
+import { useLicense } from "../license/license";
 
 export default function Settings() {
   const projects = useProjects();
@@ -73,6 +75,41 @@ export default function Settings() {
         )}
       </div>
       <DeviceCard name={user?.name ?? ""} />
+      <LicenseCard />
+    </div>
+  );
+}
+
+function LicenseCard() {
+  const { state, setRenewing } = useLicense();
+  if (state.status === "loading" || state.status === "needed") return null;
+  return (
+    <div className="card" data-testid="license-info">
+      <h3>{t("Licence")}</h3>
+      {state.status === "active" ? (
+        <>
+          <p className="b">
+            {state.license.expiresOn ? t("Licence valid until {date}", { date: fmtLicenseDate(state.license.expiresOn) }) : t("Permanent licence")}
+          </p>
+          <dl className="kv">
+            <dt>{t("Licence no.")}</dt>
+            <dd>{state.license.number}</dd>
+            <dt>{t("This device's code")}</dt>
+            <dd>
+              <code>{state.deviceCode}</code>
+            </dd>
+          </dl>
+          <div style={{ marginTop: 14 }}>
+            <button className="btn" data-testid="license-new-code" onClick={() => setRenewing(true)}>
+              {t("Enter a new code")}
+            </button>
+          </div>
+        </>
+      ) : (
+        <p className="small muted">
+          {t("Licensing is not switched on in this version.")} {t("This device's code")}: <code>{state.deviceCode}</code>
+        </p>
+      )}
     </div>
   );
 }

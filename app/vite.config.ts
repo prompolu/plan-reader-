@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -78,8 +79,8 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   if (req.mode === "navigate") {
-    // the app shell: network first so updates arrive, cached copy offline
-    e.respondWith(fetch(req).catch(() => caches.match("./", { ignoreSearch: true })));
+    // pages: network first so updates arrive, cached copy offline
+    e.respondWith(fetch(req).catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || caches.match("./", { ignoreSearch: true }))));
     return;
   }
   e.respondWith(
@@ -104,6 +105,18 @@ export default defineConfig({
   plugins: [react(), offlineApp()],
   server: { port: 5173 },
   worker: { format: "es" },
-  build: { sourcemap: false, target: "es2020", chunkSizeWarningLimit: 12000, assetsInlineLimit: 0 },
+  build: {
+    sourcemap: false,
+    target: "es2020",
+    chunkSizeWarningLimit: 12000,
+    assetsInlineLimit: 0,
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL("./index.html", import.meta.url)),
+        // the vendor's activation-code generator (no secret inside: the key stays on its devices)
+        generator: fileURLToPath(new URL("./generator.html", import.meta.url)),
+      },
+    },
+  },
   test: { environment: "node", include: ["src/**/*.test.ts"] },
 });

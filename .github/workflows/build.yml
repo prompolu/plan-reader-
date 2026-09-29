@@ -39,9 +39,17 @@ jobs:
       - run: npm test
       - name: Extraction benchmark (31 vector drawing sets)
         run: npx tsx scripts/benchmark.ts benchmark/sets --out benchmark-report.md
+      # the published web app: vendor licence key, no test key
       - run: npm run build
+      - run: npm run check:keys
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: app/dist
+      # the browser tests run a separate build that also accepts the test key
+      # (e2e/license-helper.ts); it is never published
       - name: Browser tests (the built app in Chromium)
         run: |
+          npm run build:e2e
           npx playwright install --with-deps chromium
           npx playwright test
       - uses: actions/upload-artifact@v4
@@ -50,9 +58,6 @@ jobs:
           name: benchmark-report
           path: app/benchmark-report.md
           if-no-files-found: ignore
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: app/dist
 
   desktop:
     needs: test
@@ -78,6 +83,7 @@ jobs:
           cache-dependency-path: app/package-lock.json
       - run: npm ci
       - run: npm run build
+      - run: npm run check:keys
       - name: Build installer
         run: npx electron-builder ${{ matrix.target }} --publish never
         env:

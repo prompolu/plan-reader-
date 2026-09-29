@@ -2355,6 +2355,132 @@ a.pill:hover {
   padding-top: 6px;
   color: var(--muted);
 }
+/* ---------------------------------------------------------------- licence (activation) */
+.activation {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+}
+.activation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow-y: auto;
+  background: rgba(60, 40, 20, 0.28);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.activation-card {
+  width: 100%;
+  max-width: 540px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 26px 28px;
+}
+.activation-card h1 {
+  margin: 4px 0 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.activation-card p {
+  margin: 0;
+}
+.activation-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.activation-brand b {
+  font-weight: 400;
+}
+.activation-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.activation-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.device-code {
+  font: 700 26px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.08em;
+  padding: 12px 16px;
+  border-radius: var(--r-inner);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  user-select: all;
+  -webkit-user-select: all;
+  overflow-wrap: anywhere;
+}
+.device-code.secret {
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+  /* activation codes wrap at their dashes, keys (no dashes) anywhere */
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+.device-code.small {
+  font-size: 12px;
+}
+.code-input {
+  font: 600 14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  resize: vertical;
+  width: 100%;
+}
+.activation-actions {
+  justify-content: flex-end;
+}
+.generator .activation-card {
+  max-width: 680px;
+}
+.gen-section {
+  border-top: 1px solid var(--hair-2);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gen-section p {
+  margin: 0;
+}
+.gen-section summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+details.gen-section[open] > summary {
+  margin-bottom: 4px;
+}
+.gen-table {
+  overflow-x: auto;
+}
+.license-banner {
+  width: calc(100% - 64px);
+  max-width: 1436px;
+  margin: 18px auto 0;
+}
+@media (max-width: 640px) {
+  .activation-card {
+    padding: 20px 18px;
+  }
+  .device-code {
+    font-size: 21px;
+  }
+  .license-banner {
+    width: calc(100% - 24px);
+  }
+}
+
 @media print {
   body {
     background: #fff !important;

@@ -8,6 +8,8 @@ import { ToastProvider } from "./components/ui";
 import { AuthProvider } from "./hooks/auth";
 import { getLang, useLang } from "./i18n";
 import { desktop } from "./components/ProjectFile";
+import { LicenseGate } from "./components/Activation";
+import { LicenseProvider } from "./license/license";
 import "@fontsource-variable/manrope";
 import "./styles.css";
 
@@ -31,6 +33,15 @@ navigator.storage?.persist?.().catch(() => undefined);
 
 document.documentElement.lang = getLang();
 
+/** The desktop menu follows the app's language (also on the activation screen). */
+function DesktopMenuLanguage() {
+  const lang = useLang();
+  React.useEffect(() => {
+    desktop()?.setLanguage?.(lang);
+  }, [lang]);
+  return null;
+}
+
 /**
  * Re-renders everything in the chosen language. Data from the app's storage
  * layer (labels, messages, history) is reloaded, because it is translated as
@@ -40,9 +51,6 @@ function LangRoot() {
   const lang = useLang();
   const qc = useQueryClient();
   const first = React.useRef(lang);
-  React.useEffect(() => {
-    desktop()?.setLanguage?.(lang);
-  }, [lang]);
   React.useEffect(() => {
     if (lang !== first.current) {
       first.current = lang;
@@ -56,11 +64,17 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <HashRouter>
-        <AuthProvider>
-          <ToastProvider>
-            <LangRoot />
-          </ToastProvider>
-        </AuthProvider>
+        <DesktopMenuLanguage />
+        <LicenseProvider>
+          {/* nothing opens (projects, interrupted processing) until this device is activated */}
+          <LicenseGate>
+            <AuthProvider>
+              <ToastProvider>
+                <LangRoot />
+              </ToastProvider>
+            </AuthProvider>
+          </LicenseGate>
+        </LicenseProvider>
       </HashRouter>
     </QueryClientProvider>
   </React.StrictMode>,

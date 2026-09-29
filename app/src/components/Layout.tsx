@@ -4,6 +4,7 @@ import { ChevronsUpDown, ClipboardCheck, FolderOpen, LayoutDashboard, Plus, Rule
 import { useProjects } from "../hooks/data";
 import { NewProjectModal } from "../pages/Dashboard";
 import { DesktopFileBridge } from "./ProjectFile";
+import { LicenseBanner } from "./Activation";
 import { t } from "../i18n";
 
 const LAST_PROJECT = "pm:lastProject";
@@ -44,6 +45,7 @@ export default function Layout() {
   return (
     <div className="app">
       <main className="main">
+        <LicenseBanner />
         <Outlet />
       </main>
       <nav className="dock" aria-label={t("Main navigation")}>

@@ -1,6 +1,7 @@
 /**
  * The only bridge between the app page and the desktop shell: project files
- * opened from Finder / Explorer or the File menu are handed to the page.
+ * opened from Finder / Explorer or the File menu are handed to the page, and
+ * the computer's identity for the licence's device code.
  */
 const { contextBridge, ipcRenderer } = require("electron");
 
@@ -14,6 +15,10 @@ contextBridge.exposeInMainWorld("planmeasureDesktop", {
   },
   chooseProjectFile() {
     ipcRenderer.send("pm:choose-file");
+  },
+  /** What identifies this computer; the licence's device code is derived from it. */
+  deviceIdentity() {
+    return ipcRenderer.invoke("pm:device-identity");
   },
   /** Menu labels follow the language chosen in the app. */
   setLanguage(lang) {
