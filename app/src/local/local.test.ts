@@ -6,7 +6,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { installNodeEngine } from "./testing/nodeEngine";
-import { localApi, uploadFiles } from "./api";
+import { localApi, openProjectUpload, uploadFiles } from "./api";
+import { imageBlob } from "./images";
 import { platform } from "../engine/platform";
 import { pdfSafe } from "./report";
 
@@ -127,6 +128,51 @@ describe("on-device app layer", () => {
     const audit = (await localApi("GET", `/api/projects/${pid}/audit`)) as Json[];
     expect(audit.filter((a) => a.action === "export_pdf").length).toBe(2);
   }, 120_000);
+
+  it("saves a project file and opens it again (as the same project, a copy, or a replacement)", async () => {
+    const saved = (await localApi("GET", `/api/projects/${pid}/file`)) as { blob: Blob; filename: string };
+    expect(saved.filename).toBe("Harbour Street.planmeasure");
+    const file = new File([await saved.blob.arrayBuffer()], saved.filename);
+    const before = (await localApi("GET", `/api/projects/${pid}/openings`)) as Json[];
+    const edited = before.find((o) => o.width?.value === 1234)!;
+
+    // already in the app: the user chooses what to do
+    await expect(openProjectUpload(file)).rejects.toMatchObject({ status: 409, details: { existing: { id: pid } } });
+
+    const copy = (await openProjectUpload(file, "copy")) as Json;
+    expect(copy.id).not.toBe(pid);
+    expect(copy.name).toBe("Harbour Street (copy)");
+    const copied = (await localApi("GET", `/api/projects/${copy.id}/openings`)) as Json[];
+    expect(copied.length).toBe(before.length);
+    const same = copied.find((o) => o.ref === edited.ref)!;
+    expect(same.id).not.toBe(edited.id);
+    expect(same.width.value).toBe(1234);
+    expect(same.verification.verified).toBe(true);
+    const pages = (await localApi("GET", `/api/projects/${copy.id}/pages`)) as Json[];
+    expect(pages.length).toBe(10);
+    expect(await imageBlob(`${pages[0].id}:image`)).toBeTruthy();
+    const trail = (await localApi("GET", `/api/projects/${copy.id}/openings/${same.id}/audit`)) as Json[];
+    expect(trail.map((a) => a.action)).toEqual(expect.arrayContaining(["edit", "verify"]));
+    // the copy is complete: it can be exported and re-extracted
+    await exportPdf(copy.id, { kind: "detailed" });
+    await localApi("DELETE", `/api/projects/${copy.id}`);
+
+    // replace: later edits in the app are undone by the file's version
+    await localApi("PATCH", `/api/projects/${pid}/openings/${edited.id}`, { changes: { notes: "after save" } });
+    const replaced = (await openProjectUpload(file, "replace")) as Json;
+    expect(replaced.id).toBe(pid);
+    const again = ((await localApi("GET", `/api/projects/${pid}/openings`)) as Json[]).find((o) => o.id === edited.id)!;
+    expect(again.notes).toBe("Checked on site – ok ✓");
+  }, 120_000);
+
+  it("refuses files that are not project files", async () => {
+    await expect(openProjectUpload(new File([readFileSync(FIXTURE)], "x.planmeasure"))).rejects.toMatchObject({ status: 422 });
+    const { zipSync, strToU8 } = await import("fflate");
+    const fake = zipSync({ "manifest.json": strToU8(JSON.stringify({ format: "planmeasure-project", format_version: 99 })) });
+    await expect(openProjectUpload(new File([fake], "new.planmeasure"))).rejects.toThrow(/newer version/);
+    const broken = zipSync({ "manifest.json": strToU8(JSON.stringify({ format: "planmeasure-project", format_version: 1 })), "project.json": strToU8("{}") });
+    await expect(openProjectUpload(new File([broken], "b.planmeasure"))).rejects.toThrow(/damaged/);
+  });
 
   it("maps text onto the characters the PDF fonts support", () => {
     expect(pdfSafe("3′-0″ ≈ 915 mm – café")).toBe("3'-0\" ~ 915 mm – café");

@@ -15,9 +15,20 @@ import { inspect, processDocs, type Encoder } from "../engineCore";
 /** Vector PDFs never need OCR; a scan in a test would get no text. */
 export const noOCR: OCRProvider = { name: "none", available: () => false, recognize: async () => [] };
 
-const encode: Encoder = async (img: RgbaImage) => {
-  const png = await platform().encodePng(img);
-  return { blob: new Blob([png as BlobPart], { type: "image/png" }), width: img.width, height: img.height };
+const encode: Encoder = async (img: RgbaImage, type, quality, maxW) => {
+  if (type === "image/png" && !maxW) {
+    const png = await platform().encodePng(img);
+    return { blob: new Blob([png as BlobPart], { type: "image/png" }), width: img.width, height: img.height };
+  }
+  const src = createCanvas(img.width, img.height);
+  const id = src.getContext("2d").createImageData(img.width, img.height);
+  id.data.set(img.data);
+  src.getContext("2d").putImageData(id, 0, 0);
+  const s = maxW && img.width > maxW ? maxW / img.width : 1;
+  const out = createCanvas(Math.max(1, Math.round(img.width * s)), Math.max(1, Math.round(img.height * s)));
+  out.getContext("2d").drawImage(src, 0, 0, out.width, out.height);
+  const buf = type === "image/jpeg" ? await out.encode("jpeg", Math.round((quality ?? 0.92) * 100)) : await out.encode("png");
+  return { blob: new Blob([buf as BlobPart], { type }), width: out.width, height: out.height };
 };
 
 class NodeOffscreenCanvas {

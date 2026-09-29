@@ -15,8 +15,9 @@ import { imageUrl, revokeImage } from "./images";
 import { validateUpload, UploadError } from "./uploads";
 import { buildReport } from "./report";
 import { getProfile, setProfile } from "./profile";
+import { APP_VERSION, deleteProjectData, openProjectFile, ProjectFileError, saveProjectFile, type OpenMode } from "./projectData";
 
-export const APP_VERSION = "2.0.0";
+export { APP_VERSION, deleteProjectData };
 
 export class ApiError extends Error {
   constructor(
@@ -338,32 +339,35 @@ route("PATCH", "/api/projects/:pid", async (m, _q, body) => {
   return projectOut(p);
 });
 
-export async function deleteProjectData(pid: string): Promise<void> {
-  const d = await db();
-  for (const pg of await byProject("pages", pid)) {
-    await d.delete("images", `${pg.id}:image`);
-    await d.delete("images", `${pg.id}:thumb`);
-    await d.delete("overlays", pg.id);
-    revokeImage(`${pg.id}:image`);
-    revokeImage(`${pg.id}:thumb`);
-    await d.delete("pages", pg.id);
-  }
-  for (const doc of await byProject("documents", pid)) {
-    await d.delete("files", doc.id);
-    await d.delete("documents", doc.id);
-  }
-  for (const o of await byProject("openings", pid)) await d.delete("openings", o.id);
-  for (const r of await byProject("runs", pid)) await d.delete("runs", r.id);
-  for (const j of await byProject("jobs", pid)) await d.delete("jobs", j.id);
-  for (const a of await byProject("audit", pid)) await d.delete("audit", a.id!);
-  await d.delete("projects", pid);
-}
 
 route("DELETE", "/api/projects/:pid", async (m) => {
   await getProject(m.groups!.pid);
   await deleteProjectData(m.groups!.pid);
   return undefined;
 });
+
+// project files (save / open)
+route("GET", "/api/projects/:pid/file", async (m) => {
+  const p = await getProject(m.groups!.pid);
+  const { bytes, filename } = await saveProjectFile(p.id);
+  await audit(p.id, "user", "save_file", `Project saved to ${filename}`, { user: await user() });
+  return { blob: new Blob([bytes as BlobPart], { type: "application/zip" }), filename };
+});
+
+/** Open a project file (the UI's "Open project file"). */
+export async function openProjectUpload(file: File, mode: OpenMode = "new") {
+  if (file.size > 1536 * 1024 * 1024) throw new ApiError(422, "The project file is too large to open");
+  try {
+    const p = await openProjectFile(new Uint8Array(await file.arrayBuffer()), mode);
+    return projectOut(p);
+  } catch (e) {
+    if (e instanceof ProjectFileError) {
+      if (e.existing) throw new ApiError(409, e.message, { existing: e.existing });
+      throw new ApiError(422, e.message);
+    }
+    throw e;
+  }
+}
 
 route("GET", "/api/projects/:pid/members", async () => []);
 
