@@ -76,3 +76,24 @@ export function toGray(img: RgbaImage): GrayImage {
   }
   return { width: img.width, height: img.height, data: out };
 }
+
+/**
+ * OpenCV.js builds signal readiness differently (a thenable module, or an
+ * `onRuntimeInitialized` callback). Resolves with the ready `cv` object.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function readyOpenCV(mod: any): Promise<any> {
+  const cv = mod?.default ?? mod;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return new Promise<{ cv: any }>((resolve) => {
+    if (cv.Mat) resolve({ cv });
+    else if (typeof cv.then === "function") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      cv.then((m: any) => {
+        // the module itself is thenable: never hand it to resolve() directly
+        if (m && typeof m.then === "function") delete m.then;
+        resolve({ cv: m });
+      });
+    } else cv.onRuntimeInitialized = () => resolve({ cv });
+  }).then((x) => x.cv);
+}
