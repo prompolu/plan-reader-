@@ -8,6 +8,7 @@ import { qk, useOpenings, usePages, useProjects } from "../hooks/data";
 import { useAuth } from "../hooks/auth";
 import { Empty, fmtDate, Modal, ProgressBar, useToast } from "../components/ui";
 import { lastProject, rememberProject } from "../components/Layout";
+import { OpenProjectFileButton, SaveProjectFileButton } from "../components/ProjectFile";
 import { DEFAULT_THRESHOLDS, pct } from "../lib/confidence";
 import { measurementText } from "../lib/units";
 
@@ -333,8 +334,8 @@ function ProjectDashboard({ project, all, onPick }: { project: Project; all: Pro
           <div className="person">
             <span className="avatar">{user?.name ? initials(user.name) : <FolderOpen size={18} />}</span>
             <div className="grow" style={{ minWidth: 0, paddingRight: 30 }}>
-              <div className="b ellipsis">{user?.name || "My workspace"}</div>
-              <div className="small muted">{user?.workspace ? "Private to this browser" : project.role ? `Project ${project.role}` : "Member"}</div>
+              <div className="b ellipsis">{user?.name || "This device"}</div>
+              <div className="small muted">{user?.workspace ? "Stored on this device" : project.role ? `Project ${project.role}` : "Member"}</div>
             </div>
           </div>
           <div className="row gap" style={{ marginTop: 14 }}>
@@ -342,6 +343,8 @@ function ProjectDashboard({ project, all, onPick }: { project: Project; all: Pro
               {m.review} need review <b>!</b>
             </Link>
             {project.is_demo && <span className="pill">Demo data</span>}
+            <span className="grow" />
+            <SaveProjectFileButton projectId={pid} compact />
           </div>
         </div>
 
@@ -548,13 +551,14 @@ export default function Dashboard() {
         <div className="card welcome">
           <Empty icon={<FileStack size={34} />} title="No projects yet">
             <p className="muted">Upload a drawing set, or explore the sample project to see the full workflow without uploading anything.</p>
-            <div className="row gap center-row">
+            <div className="row gap wrap center-row">
               <button className="btn btn-primary" onClick={demo.run} disabled={demo.busy}>
                 <FlaskConical size={15} /> {demo.busy ? "Creating demo…" : "Try the demo project"}
               </button>
               <button className="btn" onClick={() => setCreating(true)}>
                 <Plus size={15} /> New project
               </button>
+              <OpenProjectFileButton />
             </div>
           </Empty>
         </div>

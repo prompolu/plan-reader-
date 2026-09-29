@@ -85,6 +85,7 @@ export async function inspect(data: Uint8Array, filename: string): Promise<{ pag
   try {
     doc = await openDocument(data, filename);
   } catch (e) {
+    console.warn(`could not open ${filename}:`, e instanceof Error ? e.stack : e);
     const msg = e instanceof Error ? e.message : String(e);
     if (/password/i.test(msg)) return { pageCount: 0, error: "Password-protected PDFs are not supported - remove the password and add it again" };
     return { pageCount: 0, error: data[0] === 0x25 ? "The PDF could not be read (damaged or not a PDF)" : "The image could not be read (damaged or unsupported)" };

@@ -3,9 +3,11 @@
  * Worker: PDF.js runs in the same thread (no nested worker), rendering uses
  * OffscreenCanvas, OpenCV.js and tesseract.js load on demand from bundled files.
  */
-import * as pdfjs from "pdfjs-dist";
+// the legacy build carries polyfills (e.g. Promise.withResolvers) for the desktop
+// app's Chromium 116 (macOS 10.13 support) and iPhones before iOS 17.4
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 // PDF.js runs its parser in this (worker) thread when the handler is registered globally
-import * as pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs";
+import * as pdfjsWorker from "pdfjs-dist/legacy/build/pdf.worker.mjs";
 import { readyOpenCV, setPlatform, type Platform, type RgbaImage } from "../engine/platform";
 import { imageDpi } from "../engine/imagemeta";
 
@@ -72,6 +74,8 @@ export function browserPlatform(assetBase: string): Platform {
           isOffscreenCanvasSupported: true,
           cMapUrl: `${assetBase}pdfjs/cmaps/`,
           cMapPacked: true,
+          // decided explicitly: PDF.js' default reads document.baseURI, which workers lack
+          useWorkerFetch: false,
         } as never),
     },
     standardFontDataUrl: `${assetBase}pdfjs/standard_fonts/`,

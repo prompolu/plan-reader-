@@ -17,3 +17,9 @@ benchmark_results/
 *.tsbuildinfo
 test-results/
 playwright-report/
+
+# app: files copied from node_modules at build time, desktop installers
+app/public/tesseract/
+app/public/pdfjs/
+app/public/demo/
+app/release/

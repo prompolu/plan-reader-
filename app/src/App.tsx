@@ -17,7 +17,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
   if (!user)
     return (
       <div className="boot">
-        <p>Could not open your workspace{error ? `: ${error}` : ""}.</p>
+        <p>Could not open your projects{error ? `: ${error}` : ""}.</p>
         <button className="btn" onClick={refresh}>
           Try again
         </button>

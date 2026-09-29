@@ -6,6 +6,7 @@ import { api } from "../api/client";
 import { qk, useProjects } from "../hooks/data";
 import { fmtDate, useToast } from "../components/ui";
 import { NewProjectModal, useCreateDemo } from "./Dashboard";
+import { OpenProjectFileButton, SaveProjectFileButton } from "../components/ProjectFile";
 
 export default function Projects() {
   const projects = useProjects();
@@ -21,6 +22,7 @@ export default function Projects() {
     if (!confirm(`Delete "${name}" and all its drawings and measurements? This cannot be undone.`)) return;
     try {
       await api(`/api/projects/${id}`, { method: "DELETE" });
+      qc.removeQueries({ predicate: (q) => q.queryKey.includes(id) });
       qc.invalidateQueries({ queryKey: qk.projects });
       toast("Project deleted");
     } catch (e) {
@@ -35,7 +37,8 @@ export default function Projects() {
           <h1>Projects</h1>
           {pick && <p className="banner banner-info">Choose a project to continue to {pick === "upload" ? "Upload Plans" : pick.charAt(0).toUpperCase() + pick.slice(1)}.</p>}
         </div>
-        <div className="row gap">
+        <div className="row gap wrap">
+          <OpenProjectFileButton />
           <button className="btn" onClick={demo.run} disabled={demo.busy}>
             <FlaskConical size={15} /> Demo project
           </button>
@@ -53,7 +56,7 @@ export default function Projects() {
               <th className="r">Openings</th>
               <th className="r">Need review</th>
               <th>Last processed</th>
-              <th>Your role</th>
+              <th>Last changed</th>
               <th />
             </tr>
           </thead>
@@ -71,8 +74,9 @@ export default function Projects() {
                 <td className="r">{p.stats?.openings ?? 0}</td>
                 <td className="r">{p.stats?.needs_review ? <span className="badge badge-amber">{p.stats.needs_review}</span> : 0}</td>
                 <td>{fmtDate(p.last_processed_at)}</td>
-                <td className="muted">{p.role}</td>
-                <td className="r">
+                <td className="muted">{fmtDate(p.updated_at)}</td>
+                <td className="r nowrap">
+                  <SaveProjectFileButton projectId={p.id} compact />
                   {p.role === "owner" && (
                     <button
                       className="icon-btn"

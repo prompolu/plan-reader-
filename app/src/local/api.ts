@@ -14,6 +14,7 @@ import { enqueueJob, jobOut } from "./processing";
 import { imageUrl, revokeImage } from "./images";
 import { validateUpload, UploadError } from "./uploads";
 import { buildReport } from "./report";
+import { engine } from "./engineClient";
 import { getProfile, setProfile } from "./profile";
 import { APP_VERSION, deleteProjectData, openProjectFile, ProjectFileError, saveProjectFile, type OpenMode } from "./projectData";
 
@@ -345,6 +346,35 @@ route("DELETE", "/api/projects/:pid", async (m) => {
   await deleteProjectData(m.groups!.pid);
   return undefined;
 });
+
+/** High-resolution rendering of part of a page (the viewer, zoomed in); returns an object URL. */
+export async function renderRegionUrl(pid: string, pageId: string, x: number, y: number, w: number, h: number, scale: number): Promise<string> {
+  await getProject(pid);
+  const d = await db();
+  const page = await d.get("pages", pageId);
+  if (!page || page.project_id !== pid) throw new ApiError(404, "Page not found");
+  const doc = await d.get("documents", page.document_id);
+  if (!doc) throw new ApiError(404, "Document not found");
+  if (![x, y, w, h, scale].every(Number.isFinite) || w <= 0 || h <= 0 || scale <= 0) throw new ApiError(422, "invalid region");
+  const blob = await engine().renderRegion(
+    {
+      id: doc.id,
+      filename: doc.original_filename,
+      load: async () => {
+        const f = await d.get("files", doc.id);
+        if (!f) throw new ApiError(404, "The drawing file is missing");
+        return new Uint8Array(await f.arrayBuffer());
+      },
+    },
+    page.page_in_document,
+    x,
+    y,
+    w,
+    h,
+    Math.min(scale, 12),
+  );
+  return URL.createObjectURL(blob);
+}
 
 // project files (save / open)
 route("GET", "/api/projects/:pid/file", async (m) => {

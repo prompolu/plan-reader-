@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
+// hash routes work from local files (desktop app) and any static host (iPhone web app)
+import { HashRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import { ToastProvider } from "./components/ui";
@@ -17,16 +18,25 @@ const queryClient = new QueryClient({
   },
 });
 
+// installable web app (iPhone): keep working offline. The desktop app ships its files.
+if (import.meta.env.PROD && "serviceWorker" in navigator && location.protocol === "https:") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch((e) => console.warn("offline support unavailable", e));
+  });
+}
+// ask the browser not to clear the projects stored on this device when space runs low
+navigator.storage?.persist?.().catch(() => undefined);
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <HashRouter>
         <AuthProvider>
           <ToastProvider>
             <App />
           </ToastProvider>
         </AuthProvider>
-      </BrowserRouter>
+      </HashRouter>
     </QueryClientProvider>
   </React.StrictMode>,
 );

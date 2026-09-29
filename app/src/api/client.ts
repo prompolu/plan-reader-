@@ -1,13 +1,9 @@
-let csrfToken: string | null = null;
-
-export function setCsrf(token: string | null) {
-  csrfToken = token;
-}
-
-function readCsrfCookie(): string | null {
-  const m = document.cookie.match(/(?:^|;\s*)pm_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : null;
-}
+/**
+ * The screens talk to the app's own on-device API (IndexedDB + the extraction
+ * engine in a Web Worker). Nothing is sent over the network.
+ */
+import { ApiError as LocalApiError, localApi, openProjectUpload, renderRegionUrl as localRegion, uploadFiles } from "../local/api";
+import type { OpenMode } from "../local/projectData";
 
 export class ApiError extends Error {
   status: number;
@@ -19,79 +15,68 @@ export class ApiError extends Error {
   }
 }
 
-function messageFrom(body: unknown, fallback: string): string {
-  if (body && typeof body === "object" && "detail" in body) {
-    const d = (body as { detail: unknown }).detail;
-    if (typeof d === "string") return d;
-    if (d && typeof d === "object" && "message" in d) return String((d as { message: string }).message);
-    if (Array.isArray(d) && d.length && typeof d[0] === "object" && d[0] && "msg" in d[0]) return String((d[0] as { msg: string }).msg);
-  }
-  return fallback;
+function wrap(e: unknown): ApiError {
+  if (e instanceof ApiError) return e;
+  if (e instanceof LocalApiError) return new ApiError(e.status, e.message, e.details);
+  console.error(e);
+  const msg = e instanceof Error ? e.message : String(e);
+  if (/quota|QuotaExceeded/i.test(msg)) return new ApiError(507, "This device is out of storage space for the app - delete old projects or free up space");
+  return new ApiError(500, msg || "Something went wrong");
 }
 
-export async function api<T = unknown>(path: string, opts: { method?: string; body?: unknown; form?: FormData; raw?: boolean } = {}): Promise<T> {
-  const method = opts.method ?? "GET";
-  const headers: Record<string, string> = {};
-  if (method !== "GET") {
-    const t = csrfToken ?? readCsrfCookie();
-    if (t) headers["x-csrf-token"] = t;
+export async function api<T = unknown>(path: string, opts: { method?: string; body?: unknown } = {}): Promise<T> {
+  try {
+    return (await localApi(opts.method ?? "GET", path, opts.body)) as T;
+  } catch (e) {
+    throw wrap(e);
   }
-  let body: BodyInit | undefined;
-  if (opts.form) body = opts.form;
-  else if (opts.body !== undefined) {
-    headers["content-type"] = "application/json";
-    body = JSON.stringify(opts.body);
-  }
-  const res = await fetch(path, { method, headers, body, credentials: "same-origin" });
-  if (opts.raw && res.ok) return res as unknown as T;
-  if (res.status === 204) return undefined as T;
-  const ct = res.headers.get("content-type") || "";
-  const data = ct.includes("application/json") ? await res.json().catch(() => null) : await res.text();
-  if (!res.ok) {
-    if (res.status === 401 && !path.startsWith("/api/auth")) {
-      window.dispatchEvent(new CustomEvent("pm:unauthorized"));
-    }
-    throw new ApiError(res.status, messageFrom(data, `Request failed (${res.status})`), data);
-  }
-  return data as T;
 }
 
-/** Upload with progress (fetch has no upload progress events). */
-export function uploadWithProgress<T>(path: string, form: FormData, onProgress: (frac: number) => void): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", path);
-    const t = csrfToken ?? readCsrfCookie();
-    if (t) xhr.setRequestHeader("x-csrf-token", t);
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) onProgress(e.loaded / e.total);
-    };
-    xhr.onload = () => {
-      let data: unknown = null;
-      try {
-        data = JSON.parse(xhr.responseText);
-      } catch {
-        data = xhr.responseText;
-      }
-      if (xhr.status >= 200 && xhr.status < 300) resolve(data as T);
-      else reject(new ApiError(xhr.status, messageFrom(data, `Upload failed (${xhr.status})`), data));
-    };
-    xhr.onerror = () => reject(new ApiError(0, "Network error during upload"));
-    xhr.send(form);
-  });
+/** Add drawings to a project (reading the files reports progress). */
+export async function uploadWithProgress<T>(path: string, form: FormData, onProgress: (frac: number) => void): Promise<T> {
+  const pid = /^\/api\/projects\/([^/]+)\/documents$/.exec(path)?.[1];
+  if (!pid) throw new ApiError(404, "Not found");
+  const files = form.getAll("files").filter((f): f is File => f instanceof File);
+  try {
+    return (await uploadFiles(pid, files, onProgress)) as T;
+  } catch (e) {
+    throw wrap(e);
+  }
 }
 
-export async function downloadBlob(path: string, body: unknown, fallbackName: string) {
-  const res = await api<Response>(path, { method: "POST", body, raw: true });
-  const blob = await res.blob();
-  const cd = res.headers.get("content-disposition") || "";
-  const m = cd.match(/filename="([^"]+)"/);
+/** Open a .planmeasure project file. A 409 error carries `details.existing` when the project is already here. */
+export async function openProjectFile<T>(file: File, mode: OpenMode = "new"): Promise<T> {
+  try {
+    return (await openProjectUpload(file, mode)) as T;
+  } catch (e) {
+    throw wrap(e);
+  }
+}
+
+/** Render part of a page at high resolution; returns an object URL the caller revokes. */
+export async function renderRegion(projectId: string, pageId: string, x: number, y: number, w: number, h: number, scale: number): Promise<string> {
+  try {
+    return await localRegion(projectId, pageId, x, y, w, h, scale);
+  } catch (e) {
+    throw wrap(e);
+  }
+}
+
+/** Save a file to the user's device (a save dialog in the desktop app, Downloads/Files in a browser). */
+export function saveBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = m ? m[1] : fallbackName;
+  a.download = filename;
+  a.rel = "noopener";
   document.body.appendChild(a);
   a.click();
   a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+/** Generate a file with the local API (PDF export, project file) and save it. */
+export async function downloadBlob(path: string, body: unknown, fallbackName: string, method = "POST"): Promise<void> {
+  const r = await api<{ blob: Blob; filename?: string }>(path, { method, body });
+  saveBlob(r.blob, r.filename || fallbackName);
 }

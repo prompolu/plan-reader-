@@ -1,17 +1,19 @@
 # Extraction benchmark
 
 **Read this first:** every number below was measured on a *synthetic* dataset
-that PlanMeasure AI generates itself (`planmeasure/demo/sets.py`): 30 randomised
-residential drawing sets (metric and imperial, 1:50 / 1:100 / 1/4" scales, tick /
-arrow / dot dimension terminators, dimension chains, rotated pages, door/window
-schedules with deliberate conflicts and duplicate tags) plus rasterised copies of
-5 of them to exercise the scanned-drawing (OCR) path.
+that PlanMeasure AI's drawing generator produced: 31 randomised residential
+drawing sets (metric and imperial, 1:50 / 1:100 / 1/4" scales, tick / arrow /
+dot dimension terminators, dimension chains, rotated pages, door/window
+schedules with deliberate conflicts and duplicate tags) plus 6 rasterised
+floor plans (200 dpi) to exercise the scanned-drawing (OCR) path. The drawings
+and their ground truth are in `app/benchmark/`.
 
 Because the generator and the detector were built together, the vector-PDF
 figures are an upper bound. **They are not a claim about accuracy on real-world
 drawings**, which vary far more in drafting conventions, line weights, fonts and
 scan quality. To measure that, add real drawings with hand-checked ground truth
-(see `backend/planmeasure/benchmark/run.py`) and re-run.
+(`<name>.pdf` + `<name>.truth.json` in `app/benchmark/sets/`, or `.png` in
+`app/benchmark/raster/`) and re-run.
 
 What the numbers do show:
 
@@ -19,16 +21,23 @@ What the numbers do show:
   dimensioned it is reported as *Needs review* or *Inferred from drawing scale*,
   never as an explicit dimension.
 * **Vector PDFs** (CAD exports) are handled well on this dataset.
-* **Scanned / raster drawings are much weaker**: about a third of the openings
-  are found and most dimensions are not associated. Everything that is found is
-  mostly correct (high precision), and the rest is left for the reviewer - but
-  expect substantial manual work on scans.
+* **Scanned / raster drawings are much weaker**: about two in five openings are
+  found and about half of those get their dimension. What is found is mostly
+  correct (90 % precision) and the rest is left for the reviewer - expect
+  substantial manual work on scans.
 
-Reproduce (about one minute):
+These numbers come from the on-device engine (TypeScript, the code the app
+runs). It is a port of the original Python pipeline and gives identical results
+on the vector sets. On scans it uses tesseract.js 5 (the WebAssembly build of
+Tesseract) instead of native Tesseract, so OCR output differs slightly: the
+Python pipeline found 31/91 openings at 96.9 % precision on the same images.
+
+Reproduce:
 
 ```bash
-cd backend
-python -m planmeasure.benchmark.run --sets 30 --raster 5 --seed 7 --out benchmark_results
+cd app
+npm run benchmark          # vector sets, a few seconds
+npm run benchmark:scans    # scanned floor plans, about two minutes
 ```
 
 ---
@@ -49,60 +58,46 @@ python -m planmeasure.benchmark.run --sets 30 --raster 5 --seed 7 --out benchmar
 | Expected review flags raised | 84/84 | 100.0% |
 | Fabricated measurements | 0 | must be 0 |
 
-<details><summary>First errors</summary>
+<details><summary>Errors</summary>
 
 - missed SD-01 (sliding_door) on page 2
 
 </details>
 
-## Rasterised floor plans (OCR path)
+## Scanned floor plans (OCR path)
 
 | Metric | Correct / total | Rate |
 |---|---|---|
-| Opening detection – recall | 31/91 | 34.1% |
-| Opening detection – precision | 31/32 | 96.9% |
-| Tag detection | 23/31 | 74.2% |
-| Width extraction (value + status) | 0/0 | – |
-| Height extraction (value + status) | 0/0 | – |
-| Dimension association | 10/31 | 32.3% |
-| Quantity (duplicate-safe counting) | 0/0 | – |
-| Duplicate flagging | 0/0 | – |
-| Opening type | 0/0 | – |
-| Expected review flags raised | 0/0 | – |
+| Opening detection – recall | 38/91 | 41.8% |
+| Opening detection – precision | 38/42 | 90.5% |
+| Tag detection | 24/38 | 63.2% |
+| Dimension association | 18/38 | 47.4% |
 | Fabricated measurements | 0 | must be 0 |
+
+Width / height / quantity checks are not scored on single scanned sheets (the
+ground truth for those comes from schedules and elevations, which these images
+do not include).
 
 <details><summary>First errors</summary>
 
-- association D-01 p1: got None expected 1020
-- missed W-01 (window) on page 1
-- missed W-01 (window) on page 1
-- missed W-02 (window) on page 1
-- missed GD-01 (garage_door) on page 1
-- missed SD-01 (sliding_door) on page 1
-- missed W-02 (window) on page 1
-- missed W-01 (window) on page 1
-- missed W-03 (window) on page 1
-- association D-03 p1: got None expected 1600
-- missed W-04 (window) on page 1
-- association D-02 p1: got None expected 820
-- missed None (opening) on page 1
-- missed W-07 (window) on page 1
-- missed D-04 (door) on page 1
-- missed W-05 (sliding_window) on page 1
-- missed W-05 (sliding_window) on page 1
-- missed W-01 (window) on page 1
-- missed W-01 (window) on page 1
-- missed W-02 (window) on page 1
-- missed W-04 (window) on page 1
-- missed W-03 (window) on page 1
-- association D-02 p1: got None expected 820
-- association D-02 p1: got None expected 820
-- association D-02 p1: got None expected 820
-- missed W02 (window) on page 1
-- missed W03 (window) on page 1
-- association D02 p1: got None expected 920
+- association W02 p1: got none, expected 600
+- tag none instead of W03 on page 1
+- missed D02 (door) on page 1
 - missed W01 (sliding_window) on page 1
-- association D02 p1: got None expected 920
+- missed W03 (window) on page 1
+- missed D03 (double_door) on page 1
+- missed D01 (door) on page 1
+- association D02 p1: got none, expected 920
+- tag none instead of W-4 on page 1
+- association W-4 p1: got none, expected 2'-0"
+- missed D-1 (door) on page 1
+- missed W-2 (sliding_window) on page 1
+- missed W-4 (window) on page 1
+- missed W-1 (window) on page 1
+- missed W-5 (window) on page 1
+- missed W-3 (window) on page 1
 
 </details>
 
+Speed on a laptop-class CPU: a 10-page vector drawing set is extracted in about
+6 seconds in the browser; a scanned sheet takes 10–25 seconds (mostly OCR).

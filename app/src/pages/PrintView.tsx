@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
-import { Printer } from "lucide-react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { ArrowLeft, Printer } from "lucide-react";
 import type { DisplayUnit } from "../api/types";
 import ScheduleView from "../components/ScheduleView";
 import { useProject, useSchedule } from "../hooks/data";
@@ -9,6 +9,7 @@ import { useProject, useSchedule } from "../hooks/data";
 export default function PrintView() {
   const { pid } = useParams();
   const [params, setParams] = useSearchParams();
+  const nav = useNavigate();
   const project = useProject(pid);
   const size = params.get("size") ?? "A4";
   const orientation = params.get("orientation") ?? "portrait";
@@ -37,6 +38,9 @@ export default function PrintView() {
   return (
     <div className={`print-page ${orientation}`}>
       <div className="print-toolbar no-print">
+        <button className="btn" onClick={() => (window.history.length > 1 ? nav(-1) : nav(`/p/${pid}/measurements`))}>
+          <ArrowLeft size={15} /> Back
+        </button>
         <select value={size} onChange={(e) => upd("size", e.target.value)} aria-label="Paper size">
           <option value="A4">A4</option>
           <option value="A3">A3</option>

@@ -65,26 +65,69 @@ export default function Settings() {
             <dd>
               {system.data.limits.max_upload_mb} MB per file · {system.data.limits.max_pages_per_document} pages per PDF · {system.data.limits.max_files_per_upload} files per upload
             </dd>
-            <dt>File storage</dt>
-            <dd>{system.data.storage === "s3" ? "Private object storage (S3)" : "Private server storage"} · files are only served via short-lived signed links to project members</dd>
+            <dt>Storage</dt>
+            <dd>On this device · nothing is uploaded</dd>
           </dl>
         )}
       </div>
-      <div className="card">
-        <h3>Workspace</h3>
-        {user?.workspace ? (
-          <p className="small">
-            No sign-in is needed. Your projects and drawings are private to this browser: they are tied to a secure, http-only cookie and are only ever served to it through short-lived signed links. Clearing this site's cookies, or opening the app in another browser, starts a new empty workspace.
-          </p>
-        ) : (
-          <dl className="kv">
-            <dt>Name</dt>
-            <dd>{user?.name || "—"}</dd>
-            <dt>Email</dt>
-            <dd>{user?.email}</dd>
-          </dl>
-        )}
-      </div>
+      <DeviceCard name={user?.name ?? ""} />
+    </div>
+  );
+}
+
+function fmtBytes(n: number): string {
+  if (n < 1024 * 1024) return `${Math.max(1, Math.round(n / 1024))} KB`;
+  if (n < 1024 ** 3) return `${(n / 1024 / 1024).toFixed(n < 10 * 1024 * 1024 ? 1 : 0)} MB`;
+  return `${(n / 1024 ** 3).toFixed(1)} GB`;
+}
+
+function DeviceCard({ name: initial }: { name: string }) {
+  const { refresh } = useAuth();
+  const toast = useToast();
+  const [name, setName] = useState(initial);
+  const [usage, setUsage] = useState<{ used: number; quota: number; persisted: boolean } | null>(null);
+  useEffect(() => {
+    (async () => {
+      if (!navigator.storage?.estimate) return;
+      const e = await navigator.storage.estimate();
+      const persisted = navigator.storage.persisted ? await navigator.storage.persisted() : false;
+      setUsage({ used: e.usage ?? 0, quota: e.quota ?? 0, persisted });
+    })().catch(() => undefined);
+  }, []);
+  const save = async () => {
+    try {
+      await api("/api/auth/me", { method: "PATCH", body: { name } });
+      await refresh();
+      toast("Saved");
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
+  return (
+    <div className="card">
+      <h3>This device</h3>
+      <p className="small">
+        No account and no server: drawings, extraction results, your edits and the audit trail are stored on this device only. To continue on another computer or phone, use <b>Save project file</b> and <b>Open project file</b>. Uninstalling the app or clearing this site's data deletes the projects stored here – keep project files as backups.
+      </p>
+      <fieldset>
+        <legend>Your name</legend>
+        <label>
+          Shown in the audit trail and on exported reports
+          <input value={name} maxLength={200} onChange={(e) => setName(e.target.value)} placeholder="e.g. Sam Carter" />
+        </label>
+        <div>
+          <button className="btn" onClick={save} disabled={name.trim() === initial.trim()}>
+            Save name
+          </button>
+        </div>
+      </fieldset>
+      {usage && (
+        <p className="small muted" style={{ marginTop: 10 }}>
+          Using {fmtBytes(usage.used)}
+          {usage.quota ? ` of ${fmtBytes(usage.quota)} available` : ""}
+          {usage.persisted ? " · storage is protected from automatic clean-up" : ""}
+        </p>
+      )}
     </div>
   );
 }

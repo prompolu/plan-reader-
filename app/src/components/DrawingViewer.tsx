@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import { ChevronLeft, ChevronRight, Expand, Layers, Maximize, Minimize, Search, ZoomIn, ZoomOut, X } from "lucide-react";
 import type { BBox, Opening, Overlay, PageInfo, Seg, Thresholds } from "../api/types";
-import { api } from "../api/client";
+import { api, renderRegion } from "../api/client";
 import { band, BAND_COLORS } from "../lib/confidence";
 
 export interface Focus {
@@ -112,6 +112,7 @@ export default function DrawingViewer(props: Props) {
       setHires(null);
       return;
     }
+    let cancelled = false;
     const t = setTimeout(() => {
       const x = Math.max(0, -view.tx / view.s);
       const y = Math.max(0, -view.ty / view.s);
@@ -119,13 +120,30 @@ export default function DrawingViewer(props: Props) {
       const h = Math.min(page.height - y, size.h / view.s);
       if (w <= 1 || h <= 1) return;
       const scale = Math.min(need, 12);
-      const url = `/api/projects/${props.projectId}/pages/${page.id}/region?x=${x.toFixed(2)}&y=${y.toFixed(2)}&w=${w.toFixed(2)}&h=${h.toFixed(2)}&scale=${scale.toFixed(3)}&t=${encodeURIComponent(page.region_token)}`;
-      const img = new Image();
-      img.onload = () => setHires({ url, x, y, w, h, page: page.id });
-      img.src = url;
+      renderRegion(props.projectId, page.id, x, y, w, h, scale)
+        .then((url) => {
+          if (cancelled) return URL.revokeObjectURL(url);
+          const img = new Image();
+          img.onload = () => (cancelled ? URL.revokeObjectURL(url) : setHires({ url, x, y, w, h, page: page.id }));
+          img.onerror = () => URL.revokeObjectURL(url);
+          img.src = url;
+        })
+        .catch(() => undefined);
     }, 250);
-    return () => clearTimeout(t);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [view, page, size, props.projectId]);
+
+  // high-resolution images are object URLs: release the one being replaced
+  const shownHires = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = shownHires.current;
+    shownHires.current = hires?.url ?? null;
+    if (prev && prev !== shownHires.current) URL.revokeObjectURL(prev);
+  }, [hires]);
+  useEffect(() => () => void (shownHires.current && URL.revokeObjectURL(shownHires.current)), []);
 
   const onWheel = (e: React.WheelEvent) => {
     const rect = wrapRef.current!.getBoundingClientRect();

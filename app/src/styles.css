@@ -156,6 +156,9 @@ input[type="radio"] {
 .grow {
   flex: 1;
 }
+.nowrap {
+  white-space: nowrap;
+}
 .row {
   display: flex;
   align-items: center;
@@ -2421,6 +2424,71 @@ a.pill:hover {
   }
   .workspace {
     height: auto;
+  }
+}
+
+/* phones (iPhone web app): everything fits the screen width; wide tables scroll inside their card */
+@media (max-width: 640px) {
+  .page {
+    padding: 22px 12px 104px;
+  }
+  .page-head h1 {
+    font-size: 30px;
+  }
+  .hero-title h1 {
+    font-size: 34px;
+  }
+  .row.gap,
+  .page-head .row {
+    flex-wrap: wrap;
+  }
+  .card,
+  .otable-scroll {
+    overflow-x: auto;
+  }
+  .review-body {
+    flex-direction: column;
+  }
+  .review-body .queue {
+    width: auto;
+    max-height: 240px;
+  }
+  .search input {
+    width: 100%;
+  }
+  .viewer-layers {
+    width: min(300px, calc(100vw - 48px));
+  }
+  .modal-wide {
+    width: auto;
+  }
+  .modal-backdrop {
+    padding: 4vh 8px;
+  }
+  .dock {
+    width: calc(100% - 16px);
+    height: 58px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    padding: 0 6px;
+    gap: 2px;
+  }
+  .brand,
+  .dock-sep {
+    display: none;
+  }
+  .dock-nav {
+    justify-content: space-between;
+    gap: 0;
+  }
+  .dock-nav a {
+    padding: 9px;
+  }
+  .dock-nav a .count {
+    display: none;
+  }
+  .dock-add i {
+    width: 36px;
+    height: 36px;
   }
 }
 @media (prefers-reduced-transparency: reduce) {

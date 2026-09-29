@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { api, setCsrf } from "../api/client";
+import { api } from "../api/client";
 import type { User } from "../api/types";
+import { recoverJobs } from "../local/processing";
 
 interface WorkspaceState {
   user: User | null;
@@ -11,11 +12,11 @@ interface WorkspaceState {
 
 const Ctx = createContext<WorkspaceState | null>(null);
 
-type SessionOut = { user: User; csrf_token: string };
+type SessionOut = { user: User };
 
 /**
- * No sign-in: each browser gets its own private workspace, held by an httpOnly
- * session cookie. Reuses the existing session when there is one.
+ * No sign-in and no server: all projects live on this device. The "user" is
+ * the local profile (the name shown in the audit trail and on reports).
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -27,19 +28,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const start = useCallback(async () => {
     setError(null);
     try {
-      // returns this browser's workspace, creating it on the first visit
       const r = await api<SessionOut>("/api/auth/workspace", { method: "POST" });
-      setCsrf(r.csrf_token);
       setUser(r.user);
     } catch (e) {
       setUser(null);
-      setError((e as Error).message);
+      const msg = (e as Error).message;
+      setError(/indexeddb|database|storage/i.test(msg) ? "This browser does not allow the app to store data on this device (private browsing?). Open it in a normal window." : msg);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // several requests can hit a 401 at once: open the workspace only once
   const refresh = useCallback(() => {
     if (!inflight.current) inflight.current = start().finally(() => (inflight.current = null));
     return inflight.current;
@@ -47,9 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refresh();
-    const onUnauth = () => refresh();
-    window.addEventListener("pm:unauthorized", onUnauth);
-    return () => window.removeEventListener("pm:unauthorized", onUnauth);
+    // processing that was interrupted when the app was closed; queued jobs resume
+    recoverJobs().catch((e) => console.error(e));
   }, [refresh]);
 
   return <Ctx.Provider value={{ user, loading, error, refresh }}>{children}</Ctx.Provider>;

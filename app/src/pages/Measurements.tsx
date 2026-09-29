@@ -44,7 +44,7 @@ export default function Measurements() {
         </div>
         <div className="row gap">
           <UnitSwitch unit={ws.unit} onChange={ws.setUnit} />
-          <button className="btn btn-primary btn-lg" onClick={() => window.open(`/p/${pid}/print?group=${group}&unit=${ws.unit}`, "_blank", "noopener")}>
+          <button className="btn btn-primary btn-lg" onClick={() => nav(`/p/${pid}/print?group=${group}&unit=${ws.unit}`)}>
             <Printer size={16} /> Print Extraction
           </button>
           <button className="btn btn-lg" onClick={() => setExporting(true)}>

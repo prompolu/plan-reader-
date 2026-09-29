@@ -29,7 +29,8 @@ export async function createTesseractBackend(paths: TesseractPaths): Promise<Tes
   const createWorker = T.createWorker ?? (T as unknown as { default: typeof T }).default.createWorker;
   const worker = await createWorker("eng", 1, {
     langPath: paths.langPath,
-    ...(paths.workerPath ? { workerPath: paths.workerPath } : {}),
+    // the bundled worker script is same-origin: load it directly (no blob: URL)
+    ...(paths.workerPath ? { workerPath: paths.workerPath, workerBlobURL: false } : {}),
     ...(paths.corePath ? { corePath: paths.corePath } : {}),
     gzip: true,
     cacheMethod: "none",

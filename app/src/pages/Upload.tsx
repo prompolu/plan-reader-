@@ -99,7 +99,7 @@ export default function Upload() {
       <div className="page-head">
         <div>
           <h1>Upload Plans</h1>
-          <p className="muted">{project.data?.name} — PDF drawing sets (single or multi-page) or scanned images (PNG, JPG). Files stay private to this project.</p>
+          <p className="muted">{project.data?.name} — PDF drawing sets (single or multi-page) or scanned images (PNG, JPG). Files stay on this device – nothing is uploaded to a server.</p>
         </div>
         {docs.data && docs.data.length > 0 && canEdit && (
           <button className="btn" onClick={reprocess} disabled={!!active}>

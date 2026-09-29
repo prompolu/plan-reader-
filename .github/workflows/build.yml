@@ -1,0 +1,105 @@
+name: Build
+
+# Tests the app, builds the desktop installers (Windows .exe, macOS .dmg) and
+# publishes the iPhone / web app to GitHub Pages. No server is involved: the
+# installers and the web app contain the whole application.
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      - run: npm run typecheck
+      - run: npm test
+      - name: Extraction benchmark (31 vector drawing sets)
+        run: npx tsx scripts/benchmark.ts benchmark/sets --out benchmark-report.md
+      - run: npm run build
+      - name: Browser tests (the built app in Chromium)
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-report
+          path: app/benchmark-report.md
+          if-no-files-found: ignore
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: app/dist
+
+  desktop:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: --win
+            artifact: PlanMeasure-AI-Windows
+            files: app/release/*.exe
+          - os: macos-latest
+            target: --mac
+            artifact: PlanMeasure-AI-macOS
+            files: app/release/*.dmg
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: Build installer
+        run: npx electron-builder ${{ matrix.target }} --publish never
+        env:
+          # unsigned builds (no certificates configured)
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+
+  pages:
+    # the iPhone / web app: https://<owner>.github.io/<repo>/
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

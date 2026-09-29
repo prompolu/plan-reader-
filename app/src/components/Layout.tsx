@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate, useParams } from "react-rout
 import { ChevronsUpDown, ClipboardCheck, FolderOpen, LayoutDashboard, Plus, Ruler, ScanSearch, Settings, Upload } from "lucide-react";
 import { useProjects } from "../hooks/data";
 import { NewProjectModal } from "../pages/Dashboard";
+import { DesktopFileBridge } from "./ProjectFile";
 
 const LAST_PROJECT = "pm:lastProject";
 
@@ -92,6 +93,7 @@ export default function Layout() {
         </div>
       </nav>
       {creating && <NewProjectModal onClose={() => setCreating(false)} />}
+      <DesktopFileBridge />
     </div>
   );
 }

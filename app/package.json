@@ -1,21 +1,38 @@
 {
-  "name": "planmeasure-frontend",
+  "name": "planmeasure-ai",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "assets": "node scripts/copy-assets.mjs",
+    "icons": "node scripts/make-icons.mjs",
+    "dev": "npm run assets && vite",
+    "build": "npm run assets && tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "benchmark": "tsx scripts/benchmark.ts",
+    "benchmark:scans": "tsx scripts/benchmark-raster.ts",
+    "desktop": "npm run build && electron .",
+    "dist:win": "npm run build && electron-builder --win --publish never",
+    "dist:mac": "npm run build && electron-builder --mac --publish never"
   },
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
     "@fontsource-variable/manrope": "^5.3.0",
+    "@napi-rs/canvas": "^1.0.9",
+    "@playwright/test": "^1.63.0",
     "@tanstack/react-query": "^5.104.0",
     "@techstark/opencv-js": "^5.0.0-release.1",
     "@tesseract.js-data/eng": "^1.0.0",
+    "@types/node": "^26.6.3",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "electron": "^26.6.10",
+    "electron-builder": "^25.1.8",
+    "fake-indexeddb": "^6.2.5",
     "fflate": "^0.8.3",
     "idb": "^8.0.3",
     "jspdf": "^4.2.1",
@@ -25,19 +42,78 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.6",
-    "tesseract.js": "^5.1.1"
-  },
-  "devDependencies": {
-    "@napi-rs/canvas": "^1.0.9",
-    "@playwright/test": "^1.63.0",
-    "@types/node": "^26.6.3",
-    "@types/react": "^18.3.31",
-    "@types/react-dom": "^18.3.7",
-    "@vitejs/plugin-react": "^4.7.0",
-    "fake-indexeddb": "^6.2.5",
+    "tesseract.js": "^5.1.1",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "vite": "^5.4.21",
     "vitest": "^2.1.9"
+  },
+  "productName": "PlanMeasure AI",
+  "description": "Door, window and opening measurements from architectural drawings - on your device.",
+  "author": "PlanMeasure AI",
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "ai.planmeasure.desktop",
+    "productName": "PlanMeasure AI",
+    "copyright": "PlanMeasure AI",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "electronVersion": "26.6.10",
+    "fileAssociations": [
+      {
+        "ext": "planmeasure",
+        "name": "PlanMeasure project",
+        "description": "PlanMeasure AI project",
+        "role": "Editor",
+        "icon": "build/icon.png"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "PlanMeasure AI",
+      "artifactName": "PlanMeasure-AI-Setup-${version}.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.png",
+      "minimumSystemVersion": "10.13",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "artifactName": "PlanMeasure-AI-${version}-mac.${ext}"
+    }
   }
 }

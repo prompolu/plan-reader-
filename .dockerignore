@@ -1,9 +1,0 @@
-**/node_modules
-**/dist
-**/.venv
-**/__pycache__
-**/storage
-**/*.tsbuildinfo
-**/test-results
-**/playwright-report
-.git

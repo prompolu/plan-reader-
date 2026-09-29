@@ -114,8 +114,6 @@ async function runJob(job: JobRow): Promise<void> {
   const progress = (step: string, frac: number, message: string) => {
     const t = Date.now();
     const changed = step !== current;
-    if (!changed && t - lastWrite < 300 && frac < 1) return;
-    lastWrite = t;
     current = step;
     const [lo, hi] = RANGES[step] ?? [0, 1];
     const overall = lo + (hi - lo) * Math.max(0, Math.min(1, frac));
@@ -132,6 +130,9 @@ async function runJob(job: JobRow): Promise<void> {
     job.step = step;
     job.progress = Math.max(job.progress ?? 0, overall);
     job.message = message;
+    // the job always holds the latest state; the stored copy is refreshed a few times a second
+    if (!changed && t - lastWrite < 300 && frac < 1) return;
+    lastWrite = t;
     void d.put("jobs", { ...job, steps: JSON.parse(JSON.stringify(job.steps)) });
   };
 
