@@ -96,8 +96,9 @@ jobs:
           if-no-files-found: error
 
   pages:
-    # the iPhone / web app: https://<owner>.github.io/<repo>/
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    # the iPhone / web app: https://<owner>.github.io/<repo>/ (and the code
+    # generator: .../generator.html), published from the default branch
+    if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     needs: test
     runs-on: ubuntu-latest
     permissions:

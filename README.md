@@ -26,9 +26,10 @@ run → Artifacts**):
 | **PlanMeasure-AI-macOS** → `PlanMeasure-AI-2.0.0-mac.dmg` (Apple silicon and Intel, macOS 10.13+) | Open the dmg and drag the app to Applications. The first time, right-click the app → *Open* (it is not notarised). |
 | **iPhone / iPad** | Open `https://<owner>.github.io/<repo>/` in Safari → Share → *Add to Home Screen*. After the first visit it works offline. |
 
-The iPhone app is published to GitHub Pages from the `main` branch. Enable it
-once under **Settings → Pages → Build and deployment → Source: GitHub
-Actions**.
+The iPhone app is published to GitHub Pages from the repository's default
+branch. Enable it once under **Settings → Pages → Build and deployment →
+Source: GitHub Actions**. The activation-code generator is published with it,
+at `https://<owner>.github.io/<repo>/generator.html`.
 
 Double-clicking a `.planmeasure` file opens it in the desktop app; the
 installers register the file type.
