@@ -69,7 +69,7 @@ interface Pending {
   progress?: Progress;
 }
 
-class EngineClient {
+class EngineClient implements EngineApi {
   private worker: Worker;
   private seq = 0;
   private pending = new Map<number, Pending>();
@@ -112,21 +112,49 @@ class EngineClient {
   }
 
   /** Render part of a page at high resolution (readable small text when zoomed in). */
-  async renderRegion(doc: { id: string; filename: string; load: () => Promise<Uint8Array> }, pageInDocument: number, x: number, y: number, w: number, h: number, scale: number): Promise<Blob> {
-    const data = this.sentDocs.has(doc.id) ? null : await doc.load();
-    const blob = await this.call<Blob>({ type: "region", docId: doc.id, filename: doc.filename, data, pageInDocument, x, y, w, h, scale, assetBase: assetBase() });
+  async renderRegion(doc: RegionDoc, pageInDocument: number, x: number, y: number, w: number, h: number, scale: number): Promise<Blob> {
+    const req = async (withData: boolean) =>
+      this.call<Blob>({ type: "region", docId: doc.id, filename: doc.filename, data: withData ? await doc.load() : null, pageInDocument, x, y, w, h, scale, assetBase: assetBase() });
+    let blob: Blob;
+    try {
+      blob = await req(!this.sentDocs.has(doc.id));
+    } catch (e) {
+      // the worker keeps a few documents open; send the file again if it was dropped
+      if (!(e instanceof Error) || e.message !== "document data required") throw e;
+      blob = await req(true);
+    }
     this.sentDocs.add(doc.id);
     return blob;
   }
 }
 
-let client: EngineClient | null = null;
+export interface RegionDoc {
+  id: string;
+  filename: string;
+  load: () => Promise<Uint8Array>;
+}
 
-export function engine(): EngineClient {
+/** What the app needs from the engine (the worker, or an in-process engine in tests). */
+export interface EngineApi {
+  inspect(data: Uint8Array, filename: string): Promise<{ pageCount: number; error: string | null }>;
+  process(docs: WorkerDoc[], config: ProcessConfig, progress: Progress): Promise<ProcessResult>;
+  renderRegion(doc: RegionDoc, pageInDocument: number, x: number, y: number, w: number, h: number, scale: number): Promise<Blob>;
+}
+
+let client: EngineApi | null = null;
+
+export function engine(): EngineApi {
   if (!client) client = new EngineClient();
   return client;
 }
 
+/** Replace the engine (tests run it in-process). */
+export function setEngine(api: EngineApi | null): void {
+  client = api;
+}
+
+/** Base URL of the bundled engine assets (fonts, OCR model). */
 export function assetBase(): string {
+  if (typeof document === "undefined") return "";
   return new URL("./", document.baseURI).href;
 }

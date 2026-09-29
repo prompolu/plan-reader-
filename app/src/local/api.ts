@@ -6,7 +6,7 @@
 import { OPENING_TYPE_LABELS, PAGE_TYPES, PAGE_TYPE_LABELS } from "../engine/types";
 import { Thresholds } from "../engine/confidence";
 import { formatRatio, parseScale } from "../engine/scale";
-import { EXTRACTION_VERSION } from "../engine/runner";
+import { EXTRACTION_VERSION } from "../engine/meta";
 import { db, byProject, nowIso, uuid, sha256Hex, type AuditRow, type DocumentRow, type JobRow, type OpeningRow, type PageRow, type ProjectRow } from "./db";
 import * as svc from "./openings";
 import { buildSchedule, GROUP_BY } from "./schedule";
@@ -28,6 +28,7 @@ export class ApiError extends Error {
   }
 }
 
+const DEFAULT_SETTINGS: ProjectRow["settings"] = { thresholds: { high: 0.85, medium: 0.6 }, display_unit: "mm", default_unit: "mm" };
 const INFO_KEYS = ["project_name", "drawing_set_name", "project_address", "prepared_by", "date", "notes"];
 const UNITS = ["original", "mm", "cm", "m", "ft_in"];
 
@@ -43,7 +44,10 @@ export async function localApi(method: string, path: string, body?: unknown): Pr
   for (const [m, rx, h] of routes) {
     if (m !== method) continue;
     const match = url.pathname.match(rx);
-    if (match) return h(match, url.searchParams, body);
+    if (!match) continue;
+    // everything under a project requires that project to exist
+    if (match.groups?.pid && url.pathname !== `/api/projects/${match.groups.pid}`) await getProject(match.groups.pid);
+    return h(match, url.searchParams, body);
   }
   throw new ApiError(404, `Not found: ${method} ${url.pathname}`);
 }
@@ -102,7 +106,7 @@ async function projectOut(p: ProjectRow, stats = true) {
     name: p.name,
     description: p.description,
     info: p.info ?? {},
-    settings: { thresholds: { high: 0.85, medium: 0.6 }, display_unit: "mm", default_unit: "mm", ...(p.settings ?? {}) },
+    settings: { ...DEFAULT_SETTINGS, ...(p.settings ?? {}) },
     is_demo: p.is_demo,
     role: "owner",
     created_at: p.created_at,
@@ -417,7 +421,7 @@ export async function addDocument(p: ProjectRow, filename: string, data: Uint8Ar
     created_at: new Date(Date.now() + ((await byProject("documents", p.id)).length ? 1 : 0)).toISOString(),
   };
   const d = await db();
-  await d.put("files", new Blob([data], { type: meta.contentType }), doc.id);
+  await d.put("files", new Blob([data as BlobPart], { type: meta.contentType }), doc.id);
   await d.put("documents", doc);
   await audit(p.id, "user", "upload", `Uploaded ${doc.original_filename} (${doc.page_count} page${doc.page_count !== 1 ? "s" : ""})`, { user: await user() });
   return doc;

@@ -77,7 +77,7 @@ export function browserPlatform(assetBase: string): Platform {
     standardFontDataUrl: `${assetBase}pdfjs/standard_fonts/`,
     createCanvas: (w, h) => new OffscreenCanvas(Math.max(1, w), Math.max(1, h)) as never,
     async decodeImage(bytes) {
-      const bmp = await createImageBitmap(new Blob([bytes]), { imageOrientation: "from-image" } as ImageBitmapOptions);
+      const bmp = await createImageBitmap(new Blob([bytes as BlobPart]), { imageOrientation: "from-image" } as ImageBitmapOptions);
       const c = new OffscreenCanvas(bmp.width, bmp.height);
       const ctx = c.getContext("2d", { willReadFrequently: true })!;
       ctx.drawImage(bmp, 0, 0);
@@ -88,7 +88,7 @@ export function browserPlatform(assetBase: string): Platform {
     async encodePng(img: RgbaImage) {
       const c = new OffscreenCanvas(img.width, img.height);
       const ctx = c.getContext("2d")!;
-      ctx.putImageData(new ImageData(img.data, img.width, img.height), 0, 0);
+      ctx.putImageData(new ImageData(img.data as Uint8ClampedArray<ArrayBuffer>, img.width, img.height), 0, 0);
       return new Uint8Array(await (await c.convertToBlob({ type: "image/png" })).arrayBuffer());
     },
     loadOpenCV() {

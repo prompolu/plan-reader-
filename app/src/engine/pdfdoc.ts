@@ -134,7 +134,7 @@ export class PdfDocument {
   // -- text and vector paths (one pass over the operator list) ----------------
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async walk(page: any, disp: Mat, unrot: Mat, rot: Mat, pw: number, ph: number): Promise<{ paths: DrawingPath[]; runs: Run[] }> {
+  private async walk(page: any, _disp: Mat, unrot: Mat, rot: Mat, pw: number, ph: number): Promise<{ paths: DrawingPath[]; runs: Run[] }> {
     const { pdfjs } = platform();
     const OPS = pdfjs.OPS;
     const ol = await page.getOperatorList();

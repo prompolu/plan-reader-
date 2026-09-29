@@ -3,7 +3,7 @@
  * rendered pages, extraction results, edits and the audit trail - stays in
  * this browser / app profile. Nothing is sent to a server.
  */
-import { openDB, type DBSchema, type IDBPDatabase } from "idb";
+import { openDB, type DBSchema, type IDBPDatabase, type StoreValue } from "idb";
 import type { BBoxDict } from "../engine/types";
 import type { Flag } from "../engine/confidence";
 import type { Evidence } from "../engine/types";
@@ -224,11 +224,11 @@ export function nowIso(): string {
   return new Date().toISOString();
 }
 
-export async function byProject<S extends "documents" | "pages" | "openings" | "runs" | "jobs" | "audit">(store: S, projectId: string) {
-  return (await db()).getAllFromIndex(store, "project", projectId);
+export async function byProject<S extends "documents" | "pages" | "openings" | "runs" | "jobs" | "audit">(store: S, projectId: string): Promise<StoreValue<Schema, S>[]> {
+  return (await db()).getAllFromIndex(store, "project" as never, projectId as never) as Promise<StoreValue<Schema, S>[]>;
 }
 
 export async function sha256Hex(data: Uint8Array): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", data);
+  const buf = await crypto.subtle.digest("SHA-256", data as Uint8Array<ArrayBuffer>);
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }

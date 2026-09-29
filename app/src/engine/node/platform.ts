@@ -1,7 +1,7 @@
 /** Node implementations of the engine platform (tests, benchmark CLI). */
 import { createRequire } from "node:module";
 import path from "node:path";
-import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { createCanvas, loadImage, Path2D } from "@napi-rs/canvas";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import type { Platform, RgbaImage } from "../platform";
 import { readyOpenCV, setPlatform } from "../platform";
@@ -10,6 +10,9 @@ import { imageDpi } from "../imagemeta";
 const require = createRequire(import.meta.url);
 
 export function nodePlatform(): Platform {
+  // pdfjs-dist may bring its own copy of @napi-rs/canvas; glyph paths must come
+  // from the same copy as the canvases we render into
+  (globalThis as { Path2D?: unknown }).Path2D = Path2D;
   const fontDir = path.join(path.dirname(require.resolve("pdfjs-dist/package.json")), "standard_fonts") + path.sep;
   let cvPromise: Promise<unknown> | null = null;
   return {

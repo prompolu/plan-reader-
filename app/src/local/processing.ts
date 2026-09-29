@@ -3,7 +3,7 @@
  * worker), persist results and merge them with the user's work. One job runs
  * at a time; progress is kept on the job so the Upload screen can show it.
  */
-import { EXTRACTION_VERSION, STEPS } from "../engine/runner";
+import { EXTRACTION_VERSION, STEPS } from "../engine/meta";
 import { OPENING_TYPE_LABELS } from "../engine/types";
 import { byProject, db, nowIso, uuid, type AuditRow, type DocumentRow, type JobRow, type PageRow, type RunRow } from "./db";
 import { assetBase, engine, type WorkerDoc } from "./engineClient";

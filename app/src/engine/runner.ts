@@ -39,24 +39,13 @@ import {
 } from "./types";
 import { segmentViews } from "./views";
 import { pyRound } from "./py";
+import { EXTRACTION_VERSION, sniffType } from "./meta";
 
-export const EXTRACTION_VERSION = "1.4.0";
+export { EXTRACTION_VERSION, STEPS, sniffType } from "./meta";
+
 
 const DRAWING_VIEWS = new Set(["floor_plan", "elevation", "detail", "section"]);
 
-/** user-facing processing steps (id, label) */
-export const STEPS: [string, string][] = [
-  ["uploaded", "Uploaded"],
-  ["rendered", "PDF rendered"],
-  ["analyzed", "Pages analyzed"],
-  ["classified", "Relevant pages identified"],
-  ["dimensions", "Extracting dimensions"],
-  ["openings", "Openings detected"],
-  ["associated", "Associating dimensions with openings"],
-  ["schedules", "Cross-checking schedules"],
-  ["crossref", "Detecting duplicates and conflicts"],
-  ["scored", "Scoring confidence"],
-];
 
 export interface InputDocument {
   index: number;
@@ -451,13 +440,6 @@ function medianOf(xs: number[]): number {
 }
 
 /** Identify file type by magic bytes (never trust the extension alone). */
-export function sniffType(data: Uint8Array): string | null {
-  const b = (i: number) => data[i];
-  if (b(0) === 0x25 && b(1) === 0x50 && b(2) === 0x44 && b(3) === 0x46 && b(4) === 0x2d) return "application/pdf";
-  if (b(0) === 0x89 && b(1) === 0x50 && b(2) === 0x4e && b(3) === 0x47 && b(4) === 0x0d && b(5) === 0x0a && b(6) === 0x1a && b(7) === 0x0a) return "image/png";
-  if (b(0) === 0xff && b(1) === 0xd8 && b(2) === 0xff) return "image/jpeg";
-  return null;
-}
 
 export async function openDocument(data: Uint8Array, filename: string): Promise<AnyDoc> {
   const kind = sniffType(data);

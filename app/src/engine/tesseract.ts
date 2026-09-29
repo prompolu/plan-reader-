@@ -43,7 +43,7 @@ export async function createTesseractBackend(paths: TesseractPaths): Promise<Tes
   const input = async (img: GrayImage): Promise<unknown> => {
     const png = await platform().encodePng(grayToRgba(img));
     if (isNode) return Buffer.from(png);
-    return new Blob([png], { type: "image/png" });
+    return new Blob([png as BlobPart], { type: "image/png" });
   };
 
   return {

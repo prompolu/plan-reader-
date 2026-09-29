@@ -1,5 +1,5 @@
 /** Checks on files added to a project (type by content, size, readable, page limits). */
-import { sniffType } from "../engine/runner";
+import { sniffType } from "../engine/meta";
 import { engine } from "./engineClient";
 
 export class UploadError extends Error {}
