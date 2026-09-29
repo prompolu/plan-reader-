@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Expand, Layers, Maximize, Minimize, Search, 
 import type { BBox, Opening, Overlay, PageInfo, Seg, Thresholds } from "../api/types";
 import { api, renderRegion } from "../api/client";
 import { band, BAND_COLORS } from "../lib/confidence";
+import { t } from "../i18n";
 
 export interface Focus {
   bbox: BBox;
@@ -113,7 +114,7 @@ export default function DrawingViewer(props: Props) {
       return;
     }
     let cancelled = false;
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       const x = Math.max(0, -view.tx / view.s);
       const y = Math.max(0, -view.ty / view.s);
       const w = Math.min(page.width - x, size.w / view.s);
@@ -132,7 +133,7 @@ export default function DrawingViewer(props: Props) {
     }, 250);
     return () => {
       cancelled = true;
-      clearTimeout(t);
+      clearTimeout(timer);
     };
   }, [view, page, size, props.projectId]);
 
@@ -271,10 +272,10 @@ export default function DrawingViewer(props: Props) {
   return (
     <div className={`viewer ${fullscreen ? "is-fullscreen" : ""}`}>
       <div className="viewer-toolbar">
-        <button className="icon-btn" title="Previous page" disabled={idx <= 0} onClick={() => props.onPageChange(pages[idx - 1].page_index)}>
+        <button className="icon-btn" title={t("Previous page")} disabled={idx <= 0} onClick={() => props.onPageChange(pages[idx - 1].page_index)}>
           <ChevronLeft size={16} />
         </button>
-        <select className="page-select" value={page?.page_index ?? ""} onChange={(e) => props.onPageChange(Number(e.target.value))} aria-label="Page">
+        <select className="page-select" value={page?.page_index ?? ""} onChange={(e) => props.onPageChange(Number(e.target.value))} aria-label={t("Page")}>
           {pages.map((p) => (
             <option key={p.id} value={p.page_index}>
               {p.page}. {p.sheet_number ? `${p.sheet_number} · ` : ""}
@@ -282,34 +283,36 @@ export default function DrawingViewer(props: Props) {
             </option>
           ))}
         </select>
-        <button className="icon-btn" title="Next page" disabled={idx < 0 || idx >= pages.length - 1} onClick={() => props.onPageChange(pages[idx + 1].page_index)}>
+        <button className="icon-btn" title={t("Next page")} disabled={idx < 0 || idx >= pages.length - 1} onClick={() => props.onPageChange(pages[idx + 1].page_index)}>
           <ChevronRight size={16} />
         </button>
         <span className="sep" />
-        <button className="icon-btn" title="Zoom out" onClick={() => zoomBy(1 / 1.4)}>
+        <button className="icon-btn" title={t("Zoom out")} onClick={() => zoomBy(1 / 1.4)}>
           <ZoomOut size={16} />
         </button>
         <span className="zoom-label">{Math.round((view.s * (page?.unit === "pt" ? 96 / 72 : 1)) * 100)}%</span>
-        <button className="icon-btn" title="Zoom in" onClick={() => zoomBy(1.4)}>
+        <button className="icon-btn" title={t("Zoom in")} onClick={() => zoomBy(1.4)}>
           <ZoomIn size={16} />
         </button>
-        <button className="icon-btn" title="Fit to screen" onClick={fit}>
+        <button className="icon-btn" title={t("Fit to screen")} onClick={fit}>
           <Expand size={16} />
         </button>
-        <button className="icon-btn" title={fullscreen ? "Exit fullscreen" : "Fullscreen"} onClick={toggleFullscreen}>
+        <button className="icon-btn" title={fullscreen ? t("Exit fullscreen") : t("Fullscreen")} onClick={toggleFullscreen}>
           {fullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
         </button>
         <span className="sep" />
-        <button className={`icon-btn ${searchOpen ? "active" : ""}`} title="Search drawing text" onClick={() => setSearchOpen((v) => !v)}>
+        <button className={`icon-btn ${searchOpen ? "active" : ""}`} title={t("Search drawing text")} onClick={() => setSearchOpen((v) => !v)}>
           <Search size={16} />
         </button>
-        <button className={`icon-btn ${showLayers ? "active" : ""}`} title="Layers" onClick={() => setShowLayers((v) => !v)}>
+        <button className={`icon-btn ${showLayers ? "active" : ""}`} title={t("Layers")} onClick={() => setShowLayers((v) => !v)}>
           <Layers size={16} />
         </button>
         {page && (
           <span className="viewer-meta">
-            {page.scale?.primary?.text ? `Scale ${page.scale.primary.text}${page.scale.primary.source === "manual" ? " (manual)" : page.scale.primary.source === "calibrated" ? " (calibrated)" : ""}` : "Scale not detected"}
-            {page.quality?.poor ? " · ⚠ low-quality scan" : ""}
+            {page.scale?.primary?.text
+              ? t("Scale {s}", { s: page.scale.primary.text }) + (page.scale.primary.source === "manual" ? ` (${t("manual")})` : page.scale.primary.source === "calibrated" ? ` (${t("calibrated")})` : "")
+              : t("Scale not detected")}
+            {page.quality?.poor ? ` · ⚠ ${t("low-quality scan")}` : ""}
           </span>
         )}
       </div>
@@ -317,10 +320,10 @@ export default function DrawingViewer(props: Props) {
         <div className="viewer-layers">
           {(
             [
-              ["openings", "Openings (floor plans)"],
-              ["references", "References (elevations, details)"],
-              ["dimensions", "All dimensions"],
-              ["detections", "All raw detections"],
+              ["openings", t("Openings (floor plans)")],
+              ["references", t("References (elevations, details)")],
+              ["dimensions", t("All dimensions")],
+              ["detections", t("All raw detections")],
             ] as const
           ).map(([k, label]) => (
             <label key={k}>
@@ -328,23 +331,23 @@ export default function DrawingViewer(props: Props) {
             </label>
           ))}
           <div className="legend">
-            <span><i style={{ background: BAND_COLORS.green }} /> High confidence / verified</span>
-            <span><i style={{ background: BAND_COLORS.yellow }} /> Review recommended</span>
-            <span><i style={{ background: BAND_COLORS.red }} /> Low confidence</span>
-            <span><i style={{ background: "#1d4ed8" }} /> Associated dimension</span>
+            <span><i style={{ background: BAND_COLORS.green }} /> {t("High confidence / verified")}</span>
+            <span><i style={{ background: BAND_COLORS.yellow }} /> {t("Review recommended")}</span>
+            <span><i style={{ background: BAND_COLORS.red }} /> {t("Low confidence")}</span>
+            <span><i style={{ background: "#1d4ed8" }} /> {t("Associated dimension")}</span>
           </div>
         </div>
       )}
       {searchOpen && (
         <div className="viewer-search">
           <form onSubmit={runSearch}>
-            <input autoFocus placeholder="Search tags, dimensions, notes…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input autoFocus placeholder={t("Search tags, dimensions, notes…")} value={q} onChange={(e) => setQ(e.target.value)} />
             <button className="icon-btn" type="button" onClick={() => { setSearchOpen(false); setHits([]); setActiveHit(null); }}>
               <X size={14} />
             </button>
           </form>
           <div className="hits">
-            {hits.length === 0 && q && <div className="muted small">Press Enter to search all pages</div>}
+            {hits.length === 0 && q && <div className="muted small">{t("Press Enter to search all pages")}</div>}
             {hits.map((h, i) => (
               <button
                 key={i}
@@ -355,7 +358,7 @@ export default function DrawingViewer(props: Props) {
                   setTimeout(() => zoomTo(h.bbox), 60);
                 }}
               >
-                <b>{h.text}</b> <span className="muted">p.{h.page_index + 1} {h.sheet ?? ""}</span>
+                <b>{h.text}</b> <span className="muted">{t("p.{n}", { n: h.page_index + 1 })} {h.sheet ?? ""}</span>
               </button>
             ))}
           </div>
@@ -370,11 +373,11 @@ export default function DrawingViewer(props: Props) {
         onPointerUp={onPointerUp}
         onDoubleClick={() => zoomBy(1.6)}
       >
-        {!page && <div className="viewer-empty">No drawing selected</div>}
-        {page && !page.image_url && <div className="viewer-empty">This page has not been rendered yet</div>}
+        {!page && <div className="viewer-empty">{t("No drawing selected")}</div>}
+        {page && !page.image_url && <div className="viewer-empty">{t("This page has not been rendered yet")}</div>}
         {page && page.image_url && (
           <div className="viewer-stage" style={{ width: page.width, height: page.height, transform: `translate(${view.tx}px, ${view.ty}px) scale(${view.s})` }}>
-            <img className="viewer-img" src={page.image_url} alt={`Page ${page.page}`} draggable={false} />
+            <img className="viewer-img" src={page.image_url} alt={t("Page {n}", { n: page.page })} draggable={false} />
             {hires && hires.page === page.id && (
               <img className="viewer-hires" src={hires.url} alt="" draggable={false} style={{ left: hires.x, top: hires.y, width: hires.w, height: hires.h }} />
             )}

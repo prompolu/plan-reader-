@@ -4,6 +4,7 @@ import type { DisplayUnit, Measurement, Opening, Thresholds } from "../api/types
 import { useOpeningMutation } from "../hooks/data";
 import { formatLength, UNIT_LABELS } from "../lib/units";
 import { ConfidenceBadge, StatusBadge, useToast } from "./ui";
+import { t, tp } from "../i18n";
 
 type SortKey = "tag" | "type" | "width" | "height" | "page" | "confidence" | "qty";
 type TypeFilter = "all" | "windows" | "doors" | "sliding" | "other";
@@ -91,7 +92,7 @@ export default function OpeningTable(p: Props) {
     if (group === "none") return [{ key: "all", title: "", rows }];
     const map = new Map<string, Opening[]>();
     for (const o of rows) {
-      const k = group === "type" ? o.type_label : group === "floor" ? o.floor || "Floor not identified" : o.drawing_reference || "No page";
+      const k = group === "type" ? o.type_label : group === "floor" ? o.floor || t("Floor not identified") : o.drawing_reference || t("No page");
       map.set(k, [...(map.get(k) ?? []), o]);
     }
     return [...map.entries()].map(([k, v]) => ({ key: k, title: k, rows: v }));
@@ -112,7 +113,7 @@ export default function OpeningTable(p: Props) {
     if (edit.field === "quantity") changes = { quantity: edit.value === "" ? null : Number(edit.value) };
     else if (edit.field === "tag") changes = { tag: edit.value || null };
     else changes = { [edit.field]: edit.value.trim() ? { text: edit.value.trim() } : null };
-    mut.mutate({ id: o.id, body: { changes, version: o.version } }, { onSuccess: () => toast("Saved"), onError: (e) => toast((e as Error).message, "error") });
+    mut.mutate({ id: o.id, body: { changes, version: o.version } }, { onSuccess: () => toast(t("Saved")), onError: (e) => toast((e as Error).message, "error") });
     setEdit(null);
   };
 
@@ -135,7 +136,7 @@ export default function OpeningTable(p: Props) {
     return (
       <span
         className={p.canEdit ? "editable" : ""}
-        title={p.canEdit ? "Double-click to edit" : undefined}
+        title={p.canEdit ? t("Double-click to edit") : undefined}
         onDoubleClick={(e) => {
           if (!p.canEdit) return;
           e.stopPropagation();
@@ -148,11 +149,11 @@ export default function OpeningTable(p: Props) {
   };
 
   const meas = (m: Measurement | null) => {
-    if (!m) return <span className="t-missing">Needs review</span>;
-    if (m.status === "conflict") return <span className="t-conflict">Conflict</span>;
+    if (!m) return <span className="t-missing">{t("Needs review")}</span>;
+    if (m.status === "conflict") return <span className="t-conflict">{t("Conflict")}</span>;
     const v = formatLength(m.value, p.unit, m.original_text, false);
     return (
-      <span className={m.status === "inferred" ? "t-inferred" : m.source === "user" ? "t-user" : ""} title={m.status === "inferred" ? "Inferred from drawing scale" : m.source === "user" ? "Entered by user" : `From drawing: “${m.original_text}”`}>
+      <span className={m.status === "inferred" ? "t-inferred" : m.source === "user" ? "t-user" : ""} title={m.status === "inferred" ? t("Inferred from drawing scale") : m.source === "user" ? t("Entered by user") : t("From drawing: “{text}”", { text: m.original_text ?? "" })}>
         {v}
         {m.status === "inferred" ? "*" : ""}
       </span>
@@ -164,34 +165,34 @@ export default function OpeningTable(p: Props) {
       <div className="otable-tools">
         <div className="search">
           <Search size={14} />
-          <input placeholder="Search tag, type, page…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search openings" />
+          <input placeholder={t("Search tag, type, page…")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t("Search openings")} />
         </div>
-        <select value={tf} onChange={(e) => setTf(e.target.value as TypeFilter)} aria-label="Type filter">
-          <option value="all">All types</option>
-          <option value="windows">Windows</option>
-          <option value="doors">Doors</option>
-          <option value="sliding">Sliding doors</option>
-          <option value="other">Other</option>
+        <select value={tf} onChange={(e) => setTf(e.target.value as TypeFilter)} aria-label={t("Type filter")}>
+          <option value="all">{t("All types")}</option>
+          <option value="windows">{t("Windows")}</option>
+          <option value="doors">{t("Doors")}</option>
+          <option value="sliding">{t("Sliding doors")}</option>
+          <option value="other">{t("Other")}</option>
         </select>
-        <select value={sf} onChange={(e) => setSf(e.target.value as StatusFilter)} aria-label="Status filter">
-          <option value="all">All statuses</option>
-          <option value="verified">Verified</option>
-          <option value="needs_review">Needs review</option>
-          <option value="inferred">Inferred</option>
-          <option value="unverified">Unverified</option>
+        <select value={sf} onChange={(e) => setSf(e.target.value as StatusFilter)} aria-label={t("Status filter")}>
+          <option value="all">{t("All statuses")}</option>
+          <option value="verified">{t("Verified")}</option>
+          <option value="needs_review">{t("Needs review")}</option>
+          <option value="inferred">{t("Inferred")}</option>
+          <option value="unverified">{t("Unverified")}</option>
         </select>
-        <select value={group} onChange={(e) => setGroup(e.target.value as GroupBy)} aria-label="Group by">
-          <option value="none">No grouping</option>
-          <option value="type">Group by type</option>
-          <option value="floor">Group by floor</option>
-          <option value="page">Group by page</option>
+        <select value={group} onChange={(e) => setGroup(e.target.value as GroupBy)} aria-label={t("Group by")}>
+          <option value="none">{t("No grouping")}</option>
+          <option value="type">{t("Group by type")}</option>
+          <option value="floor">{t("Group by floor")}</option>
+          <option value="page">{t("Group by page")}</option>
         </select>
-        <span className="muted small grow">
-          {rows.length} of {p.openings.length} · {rows.reduce((n, o) => n + (o.quantity ?? 0), 0)} openings
+        <span className="muted small grow nowrap">
+          {t("{a} of {b}", { a: rows.length, b: p.openings.length })} · {tp(rows.reduce((n, o) => n + (o.quantity ?? 0), 0), "{n} opening", "{n} openings")}
         </span>
         {p.canEdit && p.onAdd && (
           <button className="btn btn-sm" onClick={p.onAdd}>
-            <Plus size={14} /> Add opening manually
+            <Plus size={14} /> {t("Add opening manually")}
           </button>
         )}
       </div>
@@ -200,15 +201,15 @@ export default function OpeningTable(p: Props) {
           <thead>
             <tr>
               <th className="num">#</th>
-              {header("type", "Type")}
-              {header("tag", "Tag")}
-              {header("width", "Width", "r")}
-              {header("height", "Height", "r")}
-              <th>Unit</th>
-              {header("qty", "Qty", "r")}
-              {header("page", "Page")}
-              <th>Status</th>
-              {header("confidence", "Conf.")}
+              {header("type", t("Type"))}
+              {header("tag", t("Tag"))}
+              {header("width", t("Width"), "r c-meas")}
+              {header("height", t("Height"), "r c-meas")}
+              <th className="c-unit">{t("Unit")}</th>
+              {header("qty", t("Qty"), "r c-qty")}
+              {header("page", t("Page"))}
+              <th>{t("Status")}</th>
+              {header("confidence", t("Conf."))}
             </tr>
           </thead>
           <tbody>
@@ -219,11 +220,11 @@ export default function OpeningTable(p: Props) {
                     <td className="num muted">{i + 1}</td>
                     <td>{o.type_label}</td>
                     <td className="b">{cell(o, "tag", o.tag || <span className="muted">—</span>, o.tag ?? "")}</td>
-                    <td className="r">{cell(o, "width", meas(o.width), o.width?.value ? (o.width.original_text ?? String(Math.round(o.width.value))) : "")}</td>
-                    <td className="r">{cell(o, "height", meas(o.height), o.height?.value ? (o.height.original_text ?? String(Math.round(o.height.value))) : "")}</td>
-                    <td className="muted">{UNIT_LABELS[p.unit]}</td>
-                    <td className="r b">{cell(o, "quantity", o.quantity ?? "—", o.quantity === null ? "" : String(o.quantity))}</td>
-                    <td>{o.drawing_reference ?? (o.page ? `p.${o.page}` : "—")}</td>
+                    <td className="r c-meas">{cell(o, "width", meas(o.width), o.width?.value ? (o.width.original_text ?? String(Math.round(o.width.value))) : "")}</td>
+                    <td className="r c-meas">{cell(o, "height", meas(o.height), o.height?.value ? (o.height.original_text ?? String(Math.round(o.height.value))) : "")}</td>
+                    <td className="muted c-unit">{UNIT_LABELS[p.unit]}</td>
+                    <td className="r b c-qty">{cell(o, "quantity", o.quantity ?? "—", o.quantity === null ? "" : String(o.quantity))}</td>
+                    <td>{o.drawing_reference ?? (o.page ? t("p.{n}", { n: o.page }) : "—")}</td>
                     <td>
                       <StatusBadge o={o} />
                     </td>
@@ -237,7 +238,7 @@ export default function OpeningTable(p: Props) {
             {rows.length === 0 && (
               <tr>
                 <td colSpan={10} className="muted center">
-                  No openings match the filters.
+                  {t("No openings match the filters.")}
                 </td>
               </tr>
             )}

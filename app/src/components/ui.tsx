@@ -2,32 +2,33 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { AlertTriangle, CheckCircle2, CircleDashed, Info, Loader2, X, XCircle } from "lucide-react";
 import type { Flag, Job, Opening, Thresholds } from "../api/types";
 import { band, BAND_COLORS, pct } from "../lib/confidence";
+import { locale, num, t } from "../i18n";
 
 export function StatusBadge({ o }: { o: Pick<Opening, "status" | "verification"> }) {
-  if (o.verification.verified) return <span className="badge badge-green"><CheckCircle2 size={12} /> Verified</span>;
-  if (o.status === "needs_review") return <span className="badge badge-amber"><AlertTriangle size={12} /> Needs review</span>;
-  return <span className="badge badge-gray">Unverified</span>;
+  if (o.verification.verified) return <span className="badge badge-green"><CheckCircle2 size={12} /> {t("Verified")}</span>;
+  if (o.status === "needs_review") return <span className="badge badge-amber"><AlertTriangle size={12} /> {t("Needs review")}</span>;
+  return <span className="badge badge-gray">{t("Unverified")}</span>;
 }
 
-export function ConfidenceBadge({ value, t }: { value: number | null | undefined; t: Thresholds }) {
-  const b = band(value, t);
+export function ConfidenceBadge({ value, t: thr }: { value: number | null | undefined; t: Thresholds }) {
+  const b = band(value, thr);
   return (
-    <span className="conf" title={`Confidence ${pct(value)}`}>
+    <span className="conf" title={t("Confidence {p}", { p: pct(value) })}>
       <i style={{ background: BAND_COLORS[b] }} />
       {pct(value)}
     </span>
   );
 }
 
-export function ConfidenceBar({ label, value, t }: { label: string; value: number | null | undefined; t: Thresholds }) {
-  const b = band(value, t);
+export function ConfidenceBar({ label, value, t: thr }: { label: string; value: number | null | undefined; t: Thresholds }) {
+  const b = band(value, thr);
   return (
     <div className="confbar">
       <span className="confbar-label">{label}</span>
       <span className="confbar-track">
         <span className="confbar-fill" style={{ width: `${Math.round((value ?? 0) * 100)}%`, background: BAND_COLORS[b] }} />
       </span>
-      <span className="confbar-val">{value === null || value === undefined ? "n/a" : pct(value)}</span>
+      <span className="confbar-val">{value === null || value === undefined ? t("n/a") : pct(value)}</span>
     </div>
   );
 }
@@ -57,7 +58,7 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
       <div className={`modal ${wide ? "modal-wide" : ""}`} role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal-head">
           <h3>{title}</h3>
-          <button className="icon-btn" onClick={onClose} aria-label="Close">
+          <button className="icon-btn" onClick={onClose} aria-label={t("Close")}>
             <X size={16} />
           </button>
         </div>
@@ -119,15 +120,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const push = useCallback((text: string, kind: "ok" | "error" = "ok") => {
     const id = Date.now() + Math.random();
     setItems((x) => [...x, { id, text, kind }]);
-    setTimeout(() => setItems((x) => x.filter((t) => t.id !== id)), kind === "error" ? 6000 : 3000);
+    setTimeout(() => setItems((x) => x.filter((it) => it.id !== id)), kind === "error" ? 6000 : 3000);
   }, []);
   return (
     <ToastCtx.Provider value={push}>
       {children}
       <div className="toasts" role="status" aria-live="polite">
-        {items.map((t) => (
-          <div key={t.id} className={`toast toast-${t.kind}`}>
-            {t.text}
+        {items.map((it) => (
+          <div key={it.id} className={`toast toast-${it.kind}`}>
+            {it.text}
           </div>
         ))}
       </div>
@@ -143,12 +144,12 @@ export function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   const today = new Date();
-  if (d.toDateString() === today.toDateString()) return `Today ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-  return d.toLocaleDateString([], { year: "numeric", month: "short", day: "numeric" });
+  if (d.toDateString() === today.toDateString()) return t("Today {time}", { time: d.toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" }) });
+  return d.toLocaleDateString(locale(), { year: "numeric", month: "short", day: "numeric" });
 }
 
 export function fmtBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
-  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  if (n < 1024) return `${n} ${t("B")}`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} ${t("KB")}`;
+  return `${num((n / 1024 / 1024).toFixed(1))} ${t("MB")}`;
 }

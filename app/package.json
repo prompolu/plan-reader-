@@ -108,12 +108,13 @@
       "category": "public.app-category.productivity",
       "icon": "build/icon.png",
       "minimumSystemVersion": "10.13",
-      "identity": "-",
+      "identity": null,
       "hardenedRuntime": false,
       "gatekeeperAssess": false
     },
     "dmg": {
       "artifactName": "PlanMeasure-AI-${version}-mac.${ext}"
-    }
+    },
+    "afterPack": "build/afterPack.cjs"
   }
 }

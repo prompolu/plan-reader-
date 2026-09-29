@@ -163,20 +163,49 @@ function createWindow() {
   mainWindow.loadURL(`${ORIGIN}/index.html`);
 }
 
+// menu labels follow the language chosen in the app (English, French, Spanish)
+const MENU = {
+  en: { file: "File", open: "Open project file…", close: "Close window", quit: "Quit", edit: "Edit", undo: "Undo", redo: "Redo", cut: "Cut", copy: "Copy", paste: "Paste", selectAll: "Select all", view: "View", reload: "Reload", devtools: "Developer tools", actual: "Actual size", zoomIn: "Zoom in", zoomOut: "Zoom out", fullscreen: "Full screen", window: "Window", minimize: "Minimize" },
+  fr: { file: "Fichier", open: "Ouvrir un fichier projet…", close: "Fermer la fenêtre", quit: "Quitter", edit: "Édition", undo: "Annuler", redo: "Rétablir", cut: "Couper", copy: "Copier", paste: "Coller", selectAll: "Tout sélectionner", view: "Affichage", reload: "Recharger", devtools: "Outils de développement", actual: "Taille réelle", zoomIn: "Zoom avant", zoomOut: "Zoom arrière", fullscreen: "Plein écran", window: "Fenêtre", minimize: "Réduire" },
+  es: { file: "Archivo", open: "Abrir archivo de proyecto…", close: "Cerrar ventana", quit: "Salir", edit: "Edición", undo: "Deshacer", redo: "Rehacer", cut: "Cortar", copy: "Copiar", paste: "Pegar", selectAll: "Seleccionar todo", view: "Ver", reload: "Recargar", devtools: "Herramientas de desarrollo", actual: "Tamaño real", zoomIn: "Acercar", zoomOut: "Alejar", fullscreen: "Pantalla completa", window: "Ventana", minimize: "Minimizar" },
+};
+let menuLang = "en";
+
 function buildMenu() {
   const isMac = process.platform === "darwin";
+  const L = MENU[menuLang] || MENU.en;
   const template = [
     ...(isMac ? [{ role: "appMenu" }] : []),
     {
-      label: "File",
-      submenu: [{ label: "Open project file…", accelerator: "CmdOrCtrl+O", click: () => chooseProjectFile() }, { type: "separator" }, isMac ? { role: "close" } : { role: "quit" }],
+      label: L.file,
+      submenu: [{ label: L.open, accelerator: "CmdOrCtrl+O", click: () => chooseProjectFile() }, { type: "separator" }, isMac ? { role: "close", label: L.close } : { role: "quit", label: L.quit }],
     },
-    { role: "editMenu" },
     {
-      label: "View",
-      submenu: [{ role: "reload" }, { role: "toggleDevTools" }, { type: "separator" }, { role: "resetZoom" }, { role: "zoomIn" }, { role: "zoomOut" }, { type: "separator" }, { role: "togglefullscreen" }],
+      label: L.edit,
+      submenu: [
+        { role: "undo", label: L.undo },
+        { role: "redo", label: L.redo },
+        { type: "separator" },
+        { role: "cut", label: L.cut },
+        { role: "copy", label: L.copy },
+        { role: "paste", label: L.paste },
+        { role: "selectAll", label: L.selectAll },
+      ],
     },
-    { role: "windowMenu" },
+    {
+      label: L.view,
+      submenu: [
+        { role: "reload", label: L.reload },
+        { role: "toggleDevTools", label: L.devtools },
+        { type: "separator" },
+        { role: "resetZoom", label: L.actual },
+        { role: "zoomIn", label: L.zoomIn },
+        { role: "zoomOut", label: L.zoomOut },
+        { type: "separator" },
+        { role: "togglefullscreen", label: L.fullscreen },
+      ],
+    },
+    { label: L.window, submenu: [{ role: "minimize", label: L.minimize }, isMac ? { role: "zoom" } : { role: "close", label: L.close }] },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
@@ -223,6 +252,15 @@ if (!app.requestSingleInstanceLock()) {
       }
     });
     ipcMain.on("pm:choose-file", () => chooseProjectFile());
+    ipcMain.on("pm:language", (_e, lang) => {
+      if (MENU[lang] && lang !== menuLang) {
+        menuLang = lang;
+        buildMenu();
+      }
+    });
+    // until the app tells us its language, follow the system's
+    const sys = app.getLocale().slice(0, 2);
+    if (MENU[sys]) menuLang = sys;
     buildMenu();
     createWindow();
     app.on("activate", () => {

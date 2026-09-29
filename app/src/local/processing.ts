@@ -9,6 +9,7 @@ import { byProject, db, nowIso, uuid, type AuditRow, type DocumentRow, type JobR
 import { assetBase, engine, type WorkerDoc } from "./engineClient";
 import { revokeImage } from "./images";
 import * as svc from "./openings";
+import { locJob } from "./localize";
 
 const RANGES: Record<string, [number, number]> = {
   rendered: [0.02, 0.25],
@@ -24,7 +25,7 @@ const RANGES: Record<string, [number, number]> = {
 const ORDER = STEPS.map(([s]) => s);
 
 export function jobOut(j: JobRow) {
-  return {
+  return locJob({
     id: j.id,
     status: j.status,
     progress: Math.round((j.progress ?? 0) * 1000) / 1000,
@@ -36,7 +37,7 @@ export function jobOut(j: JobRow) {
     started_at: j.started_at,
     finished_at: j.finished_at,
     run_id: j.run_id,
-  };
+  });
 }
 
 function initialSteps(): JobRow["steps"] {

@@ -1378,6 +1378,20 @@ legend {
   vertical-align: -1px;
   margin-left: 3px;
 }
+/* numeric columns: header and values share the right edge; width and height get equal columns */
+.otable th.r,
+.otable td.r {
+  text-align: right;
+}
+.otable .c-meas {
+  width: 118px;
+}
+.otable .c-qty {
+  width: 64px;
+}
+.otable .c-unit {
+  width: 56px;
+}
 .otable th.num {
   cursor: default;
 }
@@ -1751,6 +1765,11 @@ legend {
 }
 .sched-table td.wrap {
   white-space: normal;
+}
+/* numeric columns: headers share the values' right edge */
+.sched-table th.r,
+.sched-table td.r {
+  text-align: right;
 }
 .sched-table td {
   overflow-wrap: anywhere;

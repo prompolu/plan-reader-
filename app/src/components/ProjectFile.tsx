@@ -5,6 +5,7 @@ import { FolderOpen, Save } from "lucide-react";
 import { ApiError, downloadBlob, isIOS, openProjectFile } from "../api/client";
 import type { Project } from "../api/types";
 import { fmtDate, Modal, useToast } from "./ui";
+import { t } from "../i18n";
 
 /** Save a project as a .planmeasure file (drawings, results, edits and audit trail). */
 export function useSaveProjectFile() {
@@ -14,7 +15,7 @@ export function useSaveProjectFile() {
     setBusy(true);
     try {
       await downloadBlob(`/api/projects/${projectId}/file`, undefined, "project.planmeasure", "GET");
-      toast("Project file saved");
+      toast(t("Project file saved"));
     } catch (e) {
       toast((e as Error).message, "error");
     } finally {
@@ -30,7 +31,7 @@ export function SaveProjectFileButton({ projectId, compact }: { projectId: strin
     return (
       <button
         className="icon-btn"
-        title="Save project file"
+        title={t("Save project file")}
         disabled={busy}
         onClick={(e) => {
           e.stopPropagation();
@@ -41,8 +42,8 @@ export function SaveProjectFileButton({ projectId, compact }: { projectId: strin
       </button>
     );
   return (
-    <button className="btn" onClick={() => save(projectId)} disabled={busy} title="Save everything in this project to a file you can keep, share or open on another device">
-      <Save size={15} /> {busy ? "Saving…" : "Save project file"}
+    <button className="btn" onClick={() => save(projectId)} disabled={busy} title={t("Save everything in this project to a file you can keep, share or open on another device")}>
+      <Save size={15} /> {busy ? t("Saving…") : t("Save project file")}
     </button>
   );
 }
@@ -65,7 +66,7 @@ export function useOpenProjectFile() {
       // cached views of a replaced or re-opened project are out of date
       qc.removeQueries({ predicate: (q) => q.queryKey.includes(p.id) });
       await qc.invalidateQueries();
-      toast(mode === "replace" ? "Project replaced with the version in the file" : `Opened “${p.name}”`);
+      toast(mode === "replace" ? t("Project replaced with the version in the file") : t("Opened “{name}”", { name: p.name }));
       nav(`/p/${p.id}/extraction`);
     } catch (e) {
       const existing = e instanceof ApiError && e.status === 409 ? (e.details as { existing?: Existing } | undefined)?.existing : undefined;
@@ -77,20 +78,20 @@ export function useOpenProjectFile() {
   };
 
   const modal = conflict && (
-    <Modal title="This project is already here" onClose={() => setConflict(null)}>
+    <Modal title={t("This project is already here")} onClose={() => setConflict(null)}>
       <p>
-        <b>{conflict.existing.name}</b> is already in the app (last changed {fmtDate(conflict.existing.updated_at)}).
+        {t("“{name}” is already in the app (last changed {date}).", { name: conflict.existing.name, date: fmtDate(conflict.existing.updated_at) })}
       </p>
-      <p className="small muted">Replace it with the version in the file, or open the file as a separate copy and keep both.</p>
+      <p className="small muted">{t("Replace it with the version in the file, or open the file as a separate copy and keep both.")}</p>
       <div className="row gap wrap" style={{ justifyContent: "flex-end", marginTop: 16 }}>
         <button className="btn" onClick={() => setConflict(null)} disabled={busy}>
-          Cancel
+          {t("Cancel")}
         </button>
         <button className="btn" onClick={() => open(conflict.file, "copy")} disabled={busy}>
-          Open as a copy
+          {t("Open as a copy")}
         </button>
         <button className="btn btn-primary" onClick={() => open(conflict.file, "replace")} disabled={busy}>
-          Replace
+          {t("Replace")}
         </button>
       </div>
     </Modal>
@@ -104,7 +105,7 @@ export function OpenProjectFileButton({ className = "btn" }: { className?: strin
   return (
     <>
       <button className={className} onClick={() => input.current?.click()} disabled={busy}>
-        <FolderOpen size={15} /> {busy ? "Opening…" : "Open project file"}
+        <FolderOpen size={15} /> {busy ? t("Opening…") : t("Open project file")}
       </button>
       <input
         ref={input}
@@ -127,6 +128,7 @@ interface DesktopBridge {
   platform: string;
   onOpenFile(cb: (f: { name: string; data: Uint8Array }) => void): void;
   chooseProjectFile(): void;
+  setLanguage?(lang: string): void;
 }
 
 /** The desktop app, when running inside it. */
@@ -145,4 +147,3 @@ export function DesktopFileBridge() {
   return <>{modal}</>;
 }
 
-export const PROJECT_FILE_HINT = "A project file keeps the drawings, results, your edits and the audit trail together – use it as a backup or to continue on another device.";

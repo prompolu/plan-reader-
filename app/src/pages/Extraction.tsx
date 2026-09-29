@@ -11,10 +11,11 @@ import { Empty } from "../components/ui";
 import { useJobs, useSystem } from "../hooks/data";
 import { useWorkspace } from "../hooks/workspace";
 import { UNIT_LABELS } from "../lib/units";
+import { t, tp } from "../i18n";
 
 export function UnitSwitch({ unit, onChange }: { unit: DisplayUnit; onChange: (u: DisplayUnit) => void }) {
   return (
-    <div className="seg" role="group" aria-label="Display unit">
+    <div className="seg" role="group" aria-label={t("Display unit")}>
       {(Object.keys(UNIT_LABELS) as DisplayUnit[]).map((u) => (
         <button key={u} className={u === unit ? "active" : ""} onClick={() => onChange(u)}>
           {UNIT_LABELS[u]}
@@ -42,14 +43,14 @@ export default function Extraction() {
   if (ws.pages.isSuccess && pages.length === 0) {
     return (
       <div className="page">
-        <Empty icon={<UploadCloud size={36} />} title="No drawings in this project yet">
+        <Empty icon={<UploadCloud size={36} />} title={t("No drawings in this project yet")}>
           {busy ? (
             <p>
               <Loader2 size={14} className="spin" /> {job?.message}
             </p>
           ) : (
             <Link className="btn btn-primary" to={`/p/${pid}/upload`}>
-              Upload plans
+              {t("Upload plans")}
             </Link>
           )}
         </Empty>
@@ -63,7 +64,8 @@ export default function Extraction() {
         <div>
           <h2>{ws.project.data?.name}</h2>
           <span className="muted small">
-            {pages.length} pages · {openings.length} opening types · {openings.reduce((n, o) => n + (o.quantity ?? 0), 0)} openings · {openings.filter((o) => o.status === "needs_review").length} need review
+            {tp(pages.length, "{n} page", "{n} pages")} · {tp(openings.length, "{n} opening type", "{n} opening types")} · {tp(openings.reduce((n, o) => n + (o.quantity ?? 0), 0), "{n} opening", "{n} openings")} ·{" "}
+            {tp(openings.filter((o) => o.status === "needs_review").length, "{n} needs review", "{n} need review")}
           </span>
         </div>
         <div className="row gap">
@@ -74,8 +76,8 @@ export default function Extraction() {
           )}
           <UnitSwitch unit={ws.unit} onChange={ws.setUnit} />
           {ws.canEdit && (
-            <button className={`btn btn-sm ${drawMode ? "btn-primary" : ""}`} onClick={() => setDrawMode((v) => !v)} title="Draw a box on the drawing to add an opening manually">
-              <SquareDashedMousePointer size={14} /> {drawMode ? "Drawing… (drag on the plan)" : "Mark opening"}
+            <button className={`btn btn-sm ${drawMode ? "btn-primary" : ""}`} onClick={() => setDrawMode((v) => !v)} title={t("Draw a box on the drawing to add an opening manually")}>
+              <SquareDashedMousePointer size={14} /> {drawMode ? t("Drawing… (drag on the plan)") : t("Mark opening")}
             </button>
           )}
         </div>
@@ -125,10 +127,10 @@ export default function Extraction() {
         <aside className="ws-right">
           <div className="tabs tabs-top">
             <button className={side === "opening" ? "active" : ""} onClick={() => setSide("opening")}>
-              Opening
+              {t("Opening")}
             </button>
             <button className={side === "page" ? "active" : ""} onClick={() => setSide("page")}>
-              Page & scale
+              {t("Page & scale")}
             </button>
           </div>
           {side === "page" ? (
@@ -149,8 +151,8 @@ export default function Extraction() {
             />
           ) : (
             <div className="tab-body muted">
-              <p>Select an opening in the table or on the drawing to see its measurements, evidence and history.</p>
-              <p className="small">Coloured boxes show detected openings: green = high confidence or verified, yellow = review recommended, red = low confidence. Dashed boxes are references (elevations, details) that are not counted again.</p>
+              <p>{t("Select an opening in the table or on the drawing to see its measurements, evidence and history.")}</p>
+              <p className="small">{t("Coloured boxes show detected openings: green = high confidence or verified, yellow = review recommended, red = low confidence. Dashed boxes are references (elevations, details) that are not counted again.")}</p>
             </div>
           )}
         </aside>

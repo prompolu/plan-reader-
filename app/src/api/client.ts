@@ -4,6 +4,7 @@
  */
 import { ApiError as LocalApiError, localApi, openProjectUpload, renderRegionUrl as localRegion, uploadFiles } from "../local/api";
 import type { OpenMode } from "../local/projectData";
+import { t, tx } from "../i18n";
 
 export class ApiError extends Error {
   status: number;
@@ -17,11 +18,12 @@ export class ApiError extends Error {
 
 function wrap(e: unknown): ApiError {
   if (e instanceof ApiError) return e;
-  if (e instanceof LocalApiError) return new ApiError(e.status, e.message, e.details);
+  // messages from the storage layer are written in English; show them in the chosen language
+  if (e instanceof LocalApiError) return new ApiError(e.status, tx(e.message), e.details);
   console.error(e);
   const msg = e instanceof Error ? e.message : String(e);
-  if (/quota|QuotaExceeded/i.test(msg)) return new ApiError(507, "This device is out of storage space for the app - delete old projects or free up space");
-  return new ApiError(500, msg || "Something went wrong");
+  if (/quota|QuotaExceeded/i.test(msg)) return new ApiError(507, t("This device is out of storage space for the app - delete old projects or free up space"));
+  return new ApiError(500, tx(msg) || t("Something went wrong"));
 }
 
 export async function api<T = unknown>(path: string, opts: { method?: string; body?: unknown } = {}): Promise<T> {

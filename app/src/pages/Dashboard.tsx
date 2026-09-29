@@ -11,6 +11,8 @@ import { lastProject, rememberProject } from "../components/Layout";
 import { OpenProjectFileButton, SaveProjectFileButton } from "../components/ProjectFile";
 import { DEFAULT_THRESHOLDS, pct } from "../lib/confidence";
 import { measurementText } from "../lib/units";
+import { t, tp } from "../i18n";
+import { LanguageSwitch } from "../components/LanguageSwitch";
 
 export function ProjectCard({ p }: { p: Project }) {
   const s = p.stats;
@@ -23,20 +25,20 @@ export function ProjectCard({ p }: { p: Project }) {
       </span>
       <div className="pcard-head">
         <h3>{p.name}</h3>
-        {p.is_demo && <span className="badge badge-blue">Demo</span>}
+        {p.is_demo && <span className="badge badge-blue">{t("Demo")}</span>}
       </div>
       <div className="pcard-stats">
         <div>
           <b>{s?.pages ?? 0}</b>
-          <span>pages</span>
+          <span>{t("pages")}</span>
         </div>
         <div>
           <b>{s?.openings ?? 0}</b>
-          <span>openings</span>
+          <span>{t("openings")}</span>
         </div>
         <div className={s && s.needs_review > 0 ? "warn" : "ok"}>
           <b>{s?.needs_review ?? 0}</b>
-          <span>need review</span>
+          <span>{t("need review")}</span>
         </div>
       </div>
       {busy ? (
@@ -47,9 +49,9 @@ export function ProjectCard({ p }: { p: Project }) {
           <ProgressBar value={job.progress} />
         </div>
       ) : job?.status === "failed" ? (
-        <div className="small error-text">Processing failed – open to see details</div>
+        <div className="small error-text">{t("Processing failed – open to see details")}</div>
       ) : (
-        <div className="small muted">Last processed: {fmtDate(p.last_processed_at)}</div>
+        <div className="small muted">{t("Last processed: {date}", { date: fmtDate(p.last_processed_at) })}</div>
       )}
     </Link>
   );
@@ -72,13 +74,13 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
     }
   };
   return (
-    <Modal title="New project" onClose={onClose}>
+    <Modal title={t("New project")} onClose={onClose}>
       <form className="form" onSubmit={create}>
         <label>
-          Project name
-          <input autoFocus required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Harbour Street Residence" />
+          {t("Project name")}
+          <input autoFocus required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} placeholder={t("e.g. {x}", { x: "Harbour Street Residence" })} />
         </label>
-        <button className="btn btn-primary">Create and upload plans</button>
+        <button className="btn btn-primary">{t("Create and upload plans")}</button>
       </form>
     </Modal>
   );
@@ -122,7 +124,7 @@ function initials(s: string): string {
 // -- charts ------------------------------------------------------------------------
 
 /** Ring gauge: one ratio against its limit (the high-confidence threshold). */
-function ConfidenceRing({ value, t }: { value: number | null; t: Thresholds }) {
+function ConfidenceRing({ value, thr }: { value: number | null; thr: Thresholds }) {
   const size = 156;
   const r = 58;
   const c = 2 * Math.PI * r;
@@ -132,7 +134,7 @@ function ConfidenceRing({ value, t }: { value: number | null; t: Thresholds }) {
     return { x1: size / 2 + (r - 13) * Math.cos(ang), y1: size / 2 + (r - 13) * Math.sin(ang), x2: size / 2 + (r + 13) * Math.cos(ang), y2: size / 2 + (r + 13) * Math.sin(ang) };
   };
   return (
-    <svg className="donut" width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`Average confidence ${pct(value)}; high-confidence threshold ${pct(t.high)}`}>
+    <svg className="donut" width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={t("Average confidence {a}; high-confidence threshold {b}", { a: pct(value), b: pct(thr.high) })}>
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth={16} />
       {value !== null && (
         <circle
@@ -147,21 +149,21 @@ function ConfidenceRing({ value, t }: { value: number | null; t: Thresholds }) {
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
       )}
-      <line {...tick(t.high)} stroke="var(--ink)" strokeWidth={2} strokeLinecap="round">
-        <title>High-confidence threshold {pct(t.high)}</title>
+      <line {...tick(thr.high)} stroke="var(--ink)" strokeWidth={2} strokeLinecap="round">
+        <title>{t("High-confidence threshold {p}", { p: pct(thr.high) })}</title>
       </line>
       <text x={size / 2} y={size / 2 + 4} textAnchor="middle" className="donut-value">
         {value === null ? "—" : Math.round(value * 100)}
         {value !== null && <tspan className="donut-unit">%</tspan>}
       </text>
       <text x={size / 2} y={size / 2 + 24} textAnchor="middle" className="donut-center">
-        average
+        {t("average")}
       </text>
     </svg>
   );
 }
 
-function ConfidenceHistogram({ openings, t }: { openings: Opening[]; t: Thresholds }) {
+function ConfidenceHistogram({ openings, thr }: { openings: Opening[]; thr: Thresholds }) {
   const bins = Array.from({ length: 10 }, (_, i) => ({ lo: i / 10, hi: (i + 1) / 10, n: 0 }));
   for (const o of openings) {
     const v = o.confidence.overall;
@@ -171,11 +173,11 @@ function ConfidenceHistogram({ openings, t }: { openings: Opening[]; t: Threshol
   const max = Math.max(1, ...bins.map((b) => b.n));
   return (
     <>
-      <div className="bars" role="img" aria-label="Distribution of opening confidence">
+      <div className="bars" role="img" aria-label={t("Distribution of opening confidence")}>
         {bins.map((b, i) => (
-          <div key={i} className={`bar ${b.hi <= t.high + 1e-9 ? "hl" : ""}`} style={{ height: `${Math.max(3, (b.n / max) * 100)}%` }}>
+          <div key={i} className={`bar ${b.hi <= thr.high + 1e-9 ? "hl" : ""}`} style={{ height: `${Math.max(3, (b.n / max) * 100)}%` }}>
             <span className="tip">
-              {Math.round(b.lo * 100)}–{Math.round(b.hi * 100)}% · {b.n} opening{b.n === 1 ? "" : "s"}
+              {Math.round(b.lo * 100)}–{Math.round(b.hi * 100)}% · {tp(b.n, "{n} opening", "{n} openings")}
             </span>
           </div>
         ))}
@@ -188,11 +190,11 @@ function ConfidenceHistogram({ openings, t }: { openings: Opening[]; t: Threshol
       <div className="chart-legend">
         <span>
           <i style={{ background: "var(--accent)" }} />
-          Below {pct(t.high)}
+          {t("Below {p}", { p: pct(thr.high) })}
         </span>
         <span>
           <i style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(43,38,34,0.2)" }} />
-          High confidence
+          {t("High confidence")}
         </span>
       </div>
     </>
@@ -203,12 +205,12 @@ function OpeningBarcode({ openings }: { openings: Opening[] }) {
   if (!openings.length) return null;
   return (
     <>
-      <div className="barcode" role="img" aria-label="Confidence of each opening">
+      <div className="barcode" role="img" aria-label={t("Confidence of each opening")}>
         {openings.map((o) => (
           <div key={o.id} className={`code ${o.status === "needs_review" && !o.verification.verified ? "hl" : ""}`} style={{ height: `${Math.max(6, (o.confidence.overall ?? 0) * 100)}%` }}>
             <span className="tip">
               {o.tag ?? o.ref} · {pct(o.confidence.overall)}
-              {o.verification.verified ? " · verified" : o.status === "needs_review" ? " · needs review" : ""}
+              {o.verification.verified ? ` · ${t("verified")}` : o.status === "needs_review" ? ` · ${t("needs review")}` : ""}
             </span>
           </div>
         ))}
@@ -216,11 +218,11 @@ function OpeningBarcode({ openings }: { openings: Opening[] }) {
       <div className="chart-legend">
         <span>
           <i style={{ background: "var(--accent-deep)" }} />
-          Needs review
+          {t("Needs review")}
         </span>
         <span>
           <i style={{ background: "rgba(120,100,80,0.35)" }} />
-          Other openings · bar height = confidence
+          {t("Other openings · bar height = confidence")}
         </span>
       </div>
     </>
@@ -245,7 +247,7 @@ function HeroSheet({ pid, page, openings, unit }: { pid: string; page: PageInfo;
   const hovered = spots.find((s) => s.key === hover);
   return (
     <div className="hero-sheet" style={{ aspectRatio: `${ratio}`, maxWidth: `min(820px, max(340px, calc((100vh - 500px) * ${ratio.toFixed(4)})))` }}>
-      {page.image_url ? <img src={page.image_url} alt={`${page.sheet_number ?? ""} ${page.page_type_label}`} draggable={false} /> : <div className="viewer-empty">Rendering…</div>}
+      {page.image_url ? <img src={page.image_url} alt={`${page.sheet_number ?? ""} ${page.page_type_label}`} draggable={false} /> : <div className="viewer-empty">{t("Rendering…")}</div>}
       {spots.map((s) => (
         <Link
           key={s.key}
@@ -280,7 +282,7 @@ function ProjectDashboard({ project, all, onPick }: { project: Project; all: Pro
   const pid = project.id;
   const openings = useOpenings(pid);
   const pages = usePages(pid);
-  const t = project.settings.thresholds ?? DEFAULT_THRESHOLDS;
+  const thr = project.settings.thresholds ?? DEFAULT_THRESHOLDS;
   const unit = project.settings.display_unit ?? "mm";
   const list = openings.data ?? [];
   const pageList = pages.data ?? [];
@@ -293,8 +295,8 @@ function ProjectDashboard({ project, all, onPick }: { project: Project; all: Pro
     const verified = list.filter((o) => o.verification.verified).length;
     const review = list.filter((o) => o.status === "needs_review" && !o.verification.verified).length;
     const qty = list.reduce((a, o) => a + (o.quantity ?? 0), 0);
-    const high = confs.filter((v) => v >= t.high).length;
-    const med = confs.filter((v) => v < t.high && v >= t.medium).length;
+    const high = confs.filter((v) => v >= thr.high).length;
+    const med = confs.filter((v) => v < thr.high && v >= thr.medium).length;
     const issues = new Map<string, number>();
     for (const o of list) {
       if (o.verification.verified) continue;
@@ -318,7 +320,7 @@ function ProjectDashboard({ project, all, onPick }: { project: Project; all: Pro
       planSheets,
       scheduleSheets,
     };
-  }, [list, pageList, t]);
+  }, [list, pageList, thr]);
 
   const heroPage = pageList.find((p) => p.page_type === "floor_plan" && p.image_url) ?? pageList.find((p) => p.image_url);
   const title = project.info.project_name || project.name;
@@ -330,41 +332,41 @@ function ProjectDashboard({ project, all, onPick }: { project: Project; all: Pro
       {/* left column */}
       <div className="dash-col">
         <div className="dash-card">
-          <Corner to="/projects" label="All projects" />
+          <Corner to="/projects" label={t("All projects")} />
           <div className="person">
             <span className="avatar">{user?.name ? initials(user.name) : <FolderOpen size={18} />}</span>
             <div className="grow" style={{ minWidth: 0, paddingRight: 30 }}>
-              <div className="b ellipsis">{user?.name || "This device"}</div>
-              <div className="small muted">{user?.workspace ? "Stored on this device" : project.role ? `Project ${project.role}` : "Member"}</div>
+              <div className="b ellipsis">{user?.name || t("This device")}</div>
+              <div className="small muted">{t("Stored on this device")}</div>
             </div>
           </div>
           <div className="row gap" style={{ marginTop: 14 }}>
             <Link to={`/p/${pid}/review`} className="pill">
-              {m.review} need review <b>!</b>
+              {tp(m.review, "{n} needs review", "{n} need review")} <b>!</b>
             </Link>
-            {project.is_demo && <span className="pill">Demo data</span>}
+            {project.is_demo && <span className="pill">{t("Demo data")}</span>}
             <span className="grow" />
             <SaveProjectFileButton projectId={pid} compact />
           </div>
         </div>
 
         <div className="dash-card">
-          <Corner to={`/p/${pid}/review`} label="Open review queue" />
-          <h3>Confidence distribution</h3>
-          <ConfidenceHistogram openings={list} t={t} />
+          <Corner to={`/p/${pid}/review`} label={t("Open review queue")} />
+          <h3>{t("Confidence distribution")}</h3>
+          <ConfidenceHistogram openings={list} thr={thr} />
         </div>
 
         <div className="dash-card grow-card">
-          <Corner to={`/p/${pid}/measurements`} label="Measurement schedule" />
-          <h3>Openings by type</h3>
+          <Corner to={`/p/${pid}/measurements`} label={t("Measurement schedule")} />
+          <h3>{t("Openings by type")}</h3>
           <div className="dash-row">
             <div>
-              <div className="dash-label">Total quantity</div>
+              <div className="dash-label">{t("Total quantity")}</div>
               <div className="dash-num lg">{m.qty}</div>
             </div>
             <div />
             <div>
-              <div className="dash-label">Tags / types</div>
+              <div className="dash-label">{t("Tags / types")}</div>
               <div className="dash-num lg">{list.length}</div>
             </div>
           </div>
@@ -389,16 +391,16 @@ function ProjectDashboard({ project, all, onPick }: { project: Project; all: Pro
                 <br />
               </>
             )}
-            {busy ? "Processing drawings…" : `Last processed ${fmtDate(project.last_processed_at)}`}
+            {busy ? t("Processing drawings…") : t("Last processed {date}", { date: fmtDate(project.last_processed_at) })}
           </p>
         </div>
         {busy ? (
           <div className="card hero-empty">
             <Loader2 size={26} className="spin" />
-            <div>{job?.message ?? "Processing…"}</div>
+            <div>{job?.message ?? t("Processing…")}</div>
             <ProgressBar value={job?.progress ?? 0} />
             <Link to={`/p/${pid}/upload`} className="btn btn-sm">
-              View progress
+              {t("View progress")}
             </Link>
           </div>
         ) : heroPage ? (
@@ -406,40 +408,40 @@ function ProjectDashboard({ project, all, onPick }: { project: Project; all: Pro
         ) : (
           <div className="card hero-empty">
             <Upload size={28} />
-            <div>No drawings in this project yet.</div>
+            <div>{t("No drawings in this project yet.")}</div>
             <Link to={`/p/${pid}/upload`} className="btn btn-primary">
-              Upload plans
+              {t("Upload plans")}
             </Link>
           </div>
         )}
-        <div className="pager" aria-label="Projects">
-          <button onClick={() => nav("/projects")} title="All projects" aria-label="All projects">
+        <div className="pager" aria-label={t("Projects")}>
+          <button onClick={() => nav("/projects")} title={t("All projects")} aria-label={t("All projects")}>
             <Home size={15} />
           </button>
           {all.slice(0, 6).map((p, i) => (
-            <button key={p.id} className={p.id === pid ? "active" : ""} onClick={() => onPick(p.id)} title={p.name} aria-label={`Show ${p.name}`} aria-current={p.id === pid}>
+            <button key={p.id} className={p.id === pid ? "active" : ""} onClick={() => onPick(p.id)} title={p.name} aria-label={t("Show {name}", { name: p.name })} aria-current={p.id === pid}>
               {i + 1}
             </button>
           ))}
         </div>
         <div className="dash-card dash-bottom">
-          <Corner to={`/p/${pid}/measurements`} label="Measurement schedule" />
-          <h3>Extraction status</h3>
+          <Corner to={`/p/${pid}/measurements`} label={t("Measurement schedule")} />
+          <h3>{t("Extraction status")}</h3>
           <div className="stat-strip">
             <div>
-              <div className="dash-label">Documents</div>
+              <div className="dash-label">{t("Documents")}</div>
               <div className="dash-num">{project.stats?.documents ?? 0}</div>
             </div>
             <div>
-              <div className="dash-label">Pages</div>
+              <div className="dash-label">{t("Pages")}</div>
               <div className="dash-num">{pageList.length}</div>
             </div>
             <div>
-              <div className="dash-label">Plan / elevation sheets</div>
+              <div className="dash-label">{t("Plan / elevation sheets")}</div>
               <div className="dash-num">{m.planSheets}</div>
             </div>
             <div>
-              <div className="dash-label">Schedule sheets</div>
+              <div className="dash-label">{t("Schedule sheets")}</div>
               <div className="dash-num">{m.scheduleSheets}</div>
             </div>
           </div>
@@ -450,65 +452,65 @@ function ProjectDashboard({ project, all, onPick }: { project: Project; all: Pro
       {/* right column */}
       <div className="dash-col">
         <div className="dash-card">
-          <Corner to="/settings" label="Confidence thresholds" />
-          <h3>Average confidence</h3>
-          <ConfidenceRing value={m.avg} t={t} />
+          <Corner to="/settings" label={t("Confidence thresholds")} />
+          <h3>{t("Average confidence")}</h3>
+          <ConfidenceRing value={m.avg} thr={thr} />
           <div className="dash-row" style={{ marginTop: 10 }}>
             <div>
-              <div className="dash-label">High ≥{pct(t.high)}</div>
+              <div className="dash-label">{t("High")} ≥{pct(thr.high)}</div>
               <div className="dash-num">{m.high}</div>
             </div>
             <div>
-              <div className="dash-label">Medium</div>
+              <div className="dash-label">{t("Medium")}</div>
               <div className="dash-num">{m.med}</div>
             </div>
             <div>
-              <div className="dash-label">Low &lt;{pct(t.medium)}</div>
+              <div className="dash-label">{t("Low")} &lt;{pct(thr.medium)}</div>
               <div className="dash-num">{m.low}</div>
             </div>
           </div>
         </div>
 
         <div className="dash-card">
-          <Corner to={`/p/${pid}/review`} label="Review queue" />
-          <h3>Review progress</h3>
+          <Corner to={`/p/${pid}/review`} label={t("Review queue")} />
+          <h3>{t("Review progress")}</h3>
           <div className="dash-row">
             <div>
-              <div className="dash-label">Verified</div>
+              <div className="dash-label">{t("Verified")}</div>
               <div className="dash-num">{pct(verifiedShare)}</div>
             </div>
             <div />
             <div>
-              <div className="dash-label">Left to check</div>
+              <div className="dash-label">{t("Left to check")}</div>
               <div className="dash-num">{list.length - m.verified}</div>
             </div>
           </div>
-          <div className="status-bar stacked" role="img" aria-label={`${m.verified} verified, ${m.review} need review, ${list.length - m.verified - m.review} unverified of ${list.length} openings`}>
-            {m.verified > 0 && <span className="s-verified" style={{ flex: m.verified }} title={`${m.verified} verified`} />}
-            {m.review > 0 && <span className="s-review" style={{ flex: m.review }} title={`${m.review} need review`} />}
-            {list.length - m.verified - m.review > 0 && <span className="s-open" style={{ flex: list.length - m.verified - m.review }} title={`${list.length - m.verified - m.review} unverified`} />}
+          <div className="status-bar stacked" role="img" aria-label={t("{a} verified, {b} need review, {c} unverified of {n} openings", { a: m.verified, b: m.review, c: list.length - m.verified - m.review, n: list.length })}>
+            {m.verified > 0 && <span className="s-verified" style={{ flex: m.verified }} title={`${m.verified} ${t("verified")}`} />}
+            {m.review > 0 && <span className="s-review" style={{ flex: m.review }} title={`${m.review} ${t("need review")}`} />}
+            {list.length - m.verified - m.review > 0 && <span className="s-open" style={{ flex: list.length - m.verified - m.review }} title={`${list.length - m.verified - m.review} ${t("unverified")}`} />}
           </div>
           <div className="chart-legend">
             <span>
               <i style={{ background: "var(--mint)" }} />
-              Verified {m.verified}
+              {t("Verified")} {m.verified}
             </span>
             <span>
               <i style={{ background: "var(--accent)" }} />
-              Needs review {m.review}
+              {t("Needs review")} {m.review}
             </span>
             <span>
               <i style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(43,38,34,0.2)" }} />
-              Unverified {list.length - m.verified - m.review}
+              {t("Unverified")} {list.length - m.verified - m.review}
             </span>
           </div>
         </div>
 
         <div className="dash-card grow-card">
-          <Corner to={`/p/${pid}/review`} label="Resolve issues" />
-          <h3>Open issues</h3>
+          <Corner to={`/p/${pid}/review`} label={t("Resolve issues")} />
+          <h3>{t("Open issues")}</h3>
           {m.issues.length === 0 ? (
-            <p className="small muted center">{list.length ? "No open warnings — every unverified opening passed its checks." : "Nothing extracted yet."}</p>
+            <p className="small muted center">{list.length ? t("No open warnings — every unverified opening passed its checks.") : t("Nothing extracted yet.")}</p>
           ) : (
             <ul className="issue-list">
               {m.issues.slice(0, 5).map(([label, n]) => (
@@ -546,19 +548,22 @@ export default function Dashboard() {
       <div className="dash-empty">
         <div className="hero-title">
           <h1>PlanMeasure AI</h1>
-          <p>Doors, windows and openings — measured from your drawings, with evidence for every value.</p>
+          <p>{t("Doors, windows and openings — measured from your drawings, with evidence for every value.")}</p>
         </div>
         <div className="card welcome">
-          <Empty icon={<FileStack size={34} />} title="No projects yet">
-            <p className="muted">Upload a drawing set, or explore the sample project to see the full workflow without uploading anything.</p>
+          <Empty icon={<FileStack size={34} />} title={t("No projects yet")}>
+            <p className="muted">{t("Upload a drawing set, or explore the sample project to see the full workflow without uploading anything.")}</p>
             <div className="row gap wrap center-row">
               <button className="btn btn-primary" onClick={demo.run} disabled={demo.busy}>
-                <FlaskConical size={15} /> {demo.busy ? "Creating demo…" : "Try the demo project"}
+                <FlaskConical size={15} /> {demo.busy ? t("Creating demo…") : t("Try the demo project")}
               </button>
               <button className="btn" onClick={() => setCreating(true)}>
-                <Plus size={15} /> New project
+                <Plus size={15} /> {t("New project")}
               </button>
               <OpenProjectFileButton />
+            </div>
+            <div className="row center-row" style={{ marginTop: 18 }}>
+              <LanguageSwitch />
             </div>
           </Empty>
         </div>

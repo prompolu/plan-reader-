@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import type { BBox, Opening, PageInfo } from "../api/types";
 import { useInvalidateProject, useSystem } from "../hooks/data";
 import { Modal, useToast } from "./ui";
+import { t } from "../i18n";
 
 export default function AddOpeningModal({
   projectId,
@@ -50,7 +51,7 @@ export default function AddOpeningModal({
         },
       });
       invalidate(projectId);
-      toast(`${o.tag || o.ref} added`);
+      toast(t("{name} added", { name: o.tag || o.ref }));
       onCreated(o);
     } catch (ex) {
       toast((ex as Error).message, "error");
@@ -60,14 +61,14 @@ export default function AddOpeningModal({
   };
 
   return (
-    <Modal title="Add opening manually" onClose={onClose}>
+    <Modal title={t("Add opening manually")} onClose={onClose}>
       <form className="form" onSubmit={submit}>
-        <p className="small muted">Manual entries are stored as user-sourced values{bbox ? " at the area you drew on the drawing" : ""}.</p>
+        <p className="small muted">{bbox ? t("Manual entries are stored as user-sourced values at the area you drew on the drawing.") : t("Manual entries are stored as user-sourced values.")}</p>
         <div className="grid2">
           <label>
-            Type
+            {t("Type")}
             <select value={f.type} onChange={set("type")}>
-              {Object.entries(system.data?.opening_types ?? { window: "Window", door: "Door" }).map(([k, v]) => (
+              {Object.entries(system.data?.opening_types ?? { window: t("Window"), door: t("Door") }).map(([k, v]) => (
                 <option key={k} value={k}>
                   {v}
                 </option>
@@ -75,23 +76,23 @@ export default function AddOpeningModal({
             </select>
           </label>
           <label>
-            Tag
-            <input value={f.tag} onChange={set("tag")} placeholder="e.g. W-12" />
+            {t("Tag")}
+            <input value={f.tag} onChange={set("tag")} placeholder={t("e.g. {x}", { x: "W-12" })} />
           </label>
           <label>
-            Width
-            <input value={f.width} onChange={set("width")} placeholder={`1200 or 4'-0"`} />
+            {t("Width")}
+            <input value={f.width} onChange={set("width")} placeholder={t("{a} or {b}", { a: "1200", b: `4'-0"` })} />
           </label>
           <label>
-            Height
-            <input value={f.height} onChange={set("height")} placeholder={`1500 or 5'-0"`} />
+            {t("Height")}
+            <input value={f.height} onChange={set("height")} placeholder={t("{a} or {b}", { a: "1500", b: `5'-0"` })} />
           </label>
           <label>
-            Quantity
+            {t("Quantity")}
             <input type="number" min={0} value={f.quantity} onChange={set("quantity")} />
           </label>
           <label>
-            Page
+            {t("Page")}
             <select value={f.page_index} onChange={set("page_index")}>
               <option value="">—</option>
               {pages.map((p) => (
@@ -102,20 +103,20 @@ export default function AddOpeningModal({
             </select>
           </label>
           <label>
-            Floor
+            {t("Floor")}
             <input value={f.floor} onChange={set("floor")} />
           </label>
           <label>
-            Room
+            {t("Room")}
             <input value={f.room} onChange={set("room")} />
           </label>
           <label className="span2">
-            Notes
+            {t("Notes")}
             <textarea rows={2} value={f.notes} onChange={set("notes")} />
           </label>
         </div>
         <button className="btn btn-primary" disabled={busy}>
-          Add opening
+          {t("Add opening")}
         </button>
       </form>
     </Modal>

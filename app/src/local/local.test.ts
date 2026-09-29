@@ -10,6 +10,7 @@ import { localApi, openProjectUpload, uploadFiles } from "./api";
 import { imageBlob } from "./images";
 import { platform } from "../engine/platform";
 import { pdfSafe } from "./report";
+import { hasTranslation, setLang } from "../i18n";
 
 const FIXTURE = path.resolve(__dirname, "../../e2e/fixtures/residential_plans.pdf");
 // set PM_REPORT_OUT=<dir> to keep the exported PDFs for a visual check
@@ -178,6 +179,50 @@ describe("on-device app layer", () => {
     expect(pdfSafe("3′-0″ ≈ 915 mm – café")).toBe("3'-0\" ~ 915 mm – café");
     expect(pdfSafe("房间 A")).toBe("?? A");
   });
+
+  it("gives labels, review flags, evidence, history and schedules in French and Spanish", async () => {
+    // everything is stored in English; collect what the screens receive in English...
+    const english: string[] = [];
+    const openings = (await localApi("GET", `/api/projects/${pid}/openings`)) as Json[];
+    for (const o of openings) {
+      english.push(o.type_label);
+      for (const f of o.flags) english.push(f.label, f.message);
+      for (const e of o.evidence) english.push(e.label, e.detail);
+      for (const m of [o.width, o.height]) for (const e of m?.evidence ?? []) english.push(e.label, e.detail);
+    }
+    for (const a of (await localApi("GET", `/api/projects/${pid}/audit`)) as Json[]) english.push(a.message);
+    for (const j of (await localApi("GET", `/api/projects/${pid}/jobs`)) as Json[]) {
+      english.push(j.message);
+      for (const s of Object.values(j.steps) as Json[]) english.push(s.label, s.detail);
+    }
+    const sched = (await localApi("GET", `/api/projects/${pid}/schedule?unit=mm`)) as Json;
+    for (const g of sched.groups) {
+      english.push(g.title);
+      for (const r of g.rows) english.push(r.type_label, ...(r.width_status === "missing" || r.width_status === "conflict" ? [r.width] : []));
+    }
+    const texts = [...new Set(english.filter((s): s is string => typeof s === "string" && s.length > 0))];
+    expect(texts.length).toBeGreaterThan(50);
+    // ...and check French and Spanish cover every one of them
+    for (const lang of ["fr", "es"] as const) expect(texts.filter((s) => !hasTranslation(s, lang))).toEqual([]);
+
+    setLang("fr", false);
+    try {
+      const fr = (await localApi("GET", `/api/projects/${pid}/schedule?unit=m`)) as Json;
+      expect(fr.groups.map((g: Json) => g.title)).toContain("TABLEAU DES FENÊTRES");
+      expect(JSON.stringify(fr.groups[0].rows[0])).toMatch(/\d,\d+ m/);
+      const trail = (await localApi("GET", `/api/projects/${pid}/audit`)) as Json[];
+      expect(trail.some((a) => a.message.startsWith("Extraction v"))).toBe(true);
+      expect(trail.some((a) => /terminée/.test(a.message))).toBe(true);
+      const pdf = await pdfText(await exportPdf(pid, { kind: "detailed" }));
+      expect(pdf.text).toContain("Tableau des mesures des ouvertures");
+      expect(pdf.text).toContain("Détail des sources pour chaque ouverture");
+      // error messages reach the screens translated
+      const { api } = await import("../api/client");
+      await expect(api(`/api/projects/${pid}/openings/${openings[0].id}`, { method: "PATCH", body: { changes: { width: { text: "abc" } } } })).rejects.toThrow("Impossible de lire une dimension dans « abc »");
+    } finally {
+      setLang("en", false);
+    }
+  }, 120_000);
 
   it("deletes a project with all its data", async () => {
     await localApi("DELETE", `/api/projects/${pid}`);

@@ -10,16 +10,17 @@ import Projects from "./pages/Projects";
 import Review from "./pages/Review";
 import Settings from "./pages/Settings";
 import Upload from "./pages/Upload";
+import { t } from "./i18n";
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading, error, refresh } = useAuth();
-  if (loading) return <div className="boot">Loading…</div>;
+  if (loading) return <div className="boot">{t("Loading…")}</div>;
   if (!user)
     return (
       <div className="boot">
-        <p>Could not open your projects{error ? `: ${error}` : ""}.</p>
+        <p>{t("Could not open your projects")}{error ? `: ${error}` : ""}.</p>
         <button className="btn" onClick={refresh}>
-          Try again
+          {t("Try again")}
         </button>
       </div>
     );

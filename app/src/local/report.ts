@@ -15,6 +15,7 @@ import { formatLength } from "../engine/units";
 import type { MeasurementRow, OpeningRow, PageRow } from "./db";
 import { imageBlob } from "./images";
 import type { ScheduleGroup } from "./schedule";
+import { num, t, tp, tx } from "../i18n";
 
 type RGB = [number, number, number];
 const CHARCOAL: RGB = [0x1f, 0x29, 0x33];
@@ -121,25 +122,26 @@ const SOURCE_LABEL: Record<string, string> = {
 };
 
 function unitLabel(unit: string): string {
-  return unit === "ft_in" ? "feet and inches" : unit === "original" ? "original drawing notation" : unit;
+  return unit === "ft_in" ? t("feet and inches") : unit === "original" ? t("original drawing notation") : unit;
 }
 
 export function measurementDetail(m: MeasurementRow | null, unit: string): string {
-  if (!m) return "Needs review (not found on the drawings)";
+  if (!m) return t("Needs review (not found on the drawings)");
   if (m.status === "conflict") {
     const cands = (m.candidates ?? []).map((c) => `${c.label ?? "?"}: ${c.original_text ?? "?"}`);
-    return "CONFLICT – " + cands.join(" vs ");
+    return t("CONFLICT – {values}", { values: cands.join(` ${t("vs")} `) });
   }
-  const txt = formatLength(m.value, unit, m.original_text);
-  const src = SOURCE_LABEL[m.source] ?? m.source ?? "";
-  const orig = m.original_text && m.source !== "user" && unit !== "original" ? ` (drawing text "${m.original_text}")` : "";
+  const raw = formatLength(m.value, unit, m.original_text);
+  const txt = unit === "cm" || unit === "m" ? num(raw) : raw;
+  const src = t(SOURCE_LABEL[m.source] ?? m.source ?? "");
+  const orig = m.original_text && m.source !== "user" && unit !== "original" ? ` (${t("drawing text “{t}”", { t: m.original_text })})` : "";
   return `${txt}${orig} – ${src}`;
 }
 
 function statusText(verified: boolean, status: string): [string, RGB] {
-  if (verified) return ["Verified", GREEN];
-  if (status === "needs_review") return ["Needs review", AMBER];
-  return ["Unverified", MUTED];
+  if (verified) return [t("Verified"), GREEN];
+  if (status === "needs_review") return [t("Needs review"), AMBER];
+  return [t("Unverified"), MUTED];
 }
 
 // ---------------------------------------------------------------------------
@@ -228,8 +230,9 @@ class Flow {
       const base = yy + (leading * PT + size * PT * 0.72) / 2;
       for (const r of line) {
         this.font(!!r.bold, r.size ?? size, r.color ?? color);
-        this.doc.text(r.text, xx, base);
-        xx += this.doc.getTextWidth(r.text);
+        const txt = pdfSafe(r.text);
+        this.doc.text(txt, xx, base);
+        xx += this.doc.getTextWidth(txt);
       }
       yy += leading * PT;
     }
@@ -386,25 +389,25 @@ export async function buildReportBytes(input: ReportInput): Promise<Uint8Array> 
   const { info, schedule, kind, includeNotes } = input;
   const now = input.now ?? new Date();
   const doc = new jsPDF({ unit: "mm", format: input.pageSize.toLowerCase(), orientation: input.orientation, compress: true });
-  const title = pdfSafe(info.project_name || input.projectName || "Project");
+  const title = pdfSafe(info.project_name || input.projectName || t("Project"));
   doc.setProperties({
-    title: `${title} - Measurement schedule`,
+    title: `${title} - ${pdfSafe(t("Measurement schedule"))}`,
     author: pdfSafe(info.prepared_by || input.generatedBy || "PlanMeasure AI"),
-    subject: "Opening measurement schedule",
+    subject: pdfSafe(t("Opening measurement schedule")),
     creator: "PlanMeasure AI",
   });
   const f = new Flow(doc);
   const unit = schedule.unit;
 
   // title and project information
-  f.para([{ text: "Opening Measurement Schedule", bold: true }], 16, 20, { after: 2 });
+  f.para([{ text: t("Opening Measurement Schedule"), bold: true }], 16, 20, { after: 2 });
   const infoRows: [string, string][] = [];
   for (const [label, key] of [
-    ["Project name", "project_name"],
-    ["Drawing set", "drawing_set_name"],
-    ["Project address", "project_address"],
-    ["Prepared by", "prepared_by"],
-    ["Date", "date"],
+    [t("Project name"), "project_name"],
+    [t("Drawing set"), "drawing_set_name"],
+    [t("Project address"), "project_address"],
+    [t("Prepared by"), "prepared_by"],
+    [t("Date"), "date"],
   ] as const) {
     const v = info[key] || (key === "project_name" ? input.projectName : null);
     if (v) infoRows.push([label, v]);
@@ -421,22 +424,22 @@ export async function buildReportBytes(input: ReportInput): Promise<Uint8Array> 
 
   const rowCount = schedule.groups.reduce((a, g) => a + g.rows.length, 0);
   const summary: Run[] = [
-    { text: String(schedule.total_openings), bold: true },
-    { text: ` openings in ${rowCount} schedule rows. Dimensions in ${unitLabel(unit)}.` },
+    { text: tp(schedule.total_openings, "{n} opening", "{n} openings"), bold: true },
+    { text: " " + t("in {r} schedule rows. Dimensions in {unit}.", { r: rowCount, unit: unitLabel(unit) }) },
   ];
   if (schedule.unverified_count) {
-    summary.push({ text: " " }, { text: `${schedule.unverified_count} item(s) are not yet verified`, bold: true, color: AMBER }, { text: " and are marked in the status column." });
+    summary.push({ text: " " }, { text: t("{n} item(s) are not yet verified", { n: schedule.unverified_count }), bold: true, color: AMBER }, { text: " " + t("and are marked in the status column.") });
   }
   f.para(summary, 8.5, 11);
-  if (schedule.has_inferred) f.para([{ text: "* Inferred from the drawing scale – not an explicitly dimensioned value." }], 7.2, 9, { color: MUTED });
+  if (schedule.has_inferred) f.para([{ text: "* " + t("Inferred from the drawing scale – not an explicitly dimensioned value.") }], 7.2, 9, { color: MUTED });
   if (includeNotes && info.notes) {
     f.y += 2;
-    f.para([{ text: "Notes", bold: true }], 8.5, 11);
+    f.para([{ text: t("Notes"), bold: true }], 8.5, 11);
     for (const line of String(info.notes).split(/\r?\n/)) f.para([{ text: line || " " }], 8.5, 11);
   }
 
   // one table per group
-  const head = ["Tag", "Type", "Width", "Height", "Qty", "Drawing ref", "Floor", "Status", ...(includeNotes ? ["Notes"] : [])];
+  const head = [t("Tag"), t("Type"), t("Width"), t("Height"), t("Qty"), t("Drawing ref"), t("Floor"), t("Status"), ...(includeNotes ? [t("Notes")] : [])].map(pdfSafe);
   const fr = [0.09, 0.14, 0.13, 0.13, 0.06, 0.13, 0.12, 0.1, ...(includeNotes ? [0.1] : [])];
   const frTotal = fr.reduce((a, b) => a + b, 0);
   const columnStyles = Object.fromEntries(fr.map((x, i) => [i, { cellWidth: (f.avail * x) / frTotal }]));
@@ -444,12 +447,12 @@ export async function buildReportBytes(input: ReportInput): Promise<Uint8Array> 
     f.need(40);
     f.para([{ text: g.title, bold: true }], 11.5, 15, { before: 10, after: 4 });
     const body = g.rows.map((r) => {
-      const meas = (text: string, st: string) => (st === "missing" ? "Needs review" : text);
+      const meas = (text: string, st: string) => (st === "missing" ? t("Needs review") : text);
       const row = [r.tag, r.type_label, meas(r.width, r.width_status), meas(r.height, r.height_status), String(r.quantity), r.drawing_reference, r.floor, statusText(r.verified, r.status)[0]];
       if (includeNotes) row.push(r.notes);
       return row.map(pdfSafe);
     });
-    const foot = [["", "", "", "Total", String(g.total_quantity), ...head.slice(5).map(() => "")]];
+    const foot = [["", "", "", pdfSafe(t("Total")), String(g.total_quantity), ...head.slice(5).map(() => "")]];
     autoTable(doc, {
       theme: "plain",
       head: [head],
@@ -490,8 +493,8 @@ export async function buildReportBytes(input: ReportInput): Promise<Uint8Array> 
   // detailed: one source block per opening
   if (kind === "detailed") {
     f.need(80);
-    f.para([{ text: "Source detail for each opening", bold: true }], 11.5, 15, { before: 10, after: 4 });
-    f.para([{ text: "Each crop shows the opening (red) and the dimension used for its size (blue) on the source drawing." }], 7.2, 9, { color: MUTED });
+    f.para([{ text: t("Source detail for each opening"), bold: true }], 11.5, 15, { before: 10, after: 4 });
+    f.para([{ text: t("Each crop shows the opening (red) and the dimension used for its size (blue) on the source drawing.") }], 7.2, 9, { color: MUTED });
     const pageByIndex = new Map(input.pages.map((p) => [p.page_index, p]));
     const stored = input.crop ? null : storedImageCrops();
     const crop = input.crop ?? stored!.crop;
@@ -531,35 +534,35 @@ export async function buildReportBytes(input: ReportInput): Promise<Uint8Array> 
     f.font(true, 10.5);
     doc.text(title.slice(0, 90), M_LEFT, 12);
     f.font(false, 8, MUTED);
-    const sub = [info.drawing_set_name ? pdfSafe(info.drawing_set_name) : null, `Date ${dateTxt}`].filter(Boolean).join(" · ");
+    const sub = [info.drawing_set_name ? pdfSafe(info.drawing_set_name) : null, pdfSafe(t("Date {d}", { d: dateTxt }))].filter(Boolean).join(" · ");
     doc.text(sub.slice(0, 140), M_LEFT, 15.5);
-    doc.text("Measurement Schedule" + (kind === "detailed" ? " — Detailed" : ""), w - M_RIGHT, 12, { align: "right" });
+    doc.text(pdfSafe(kind === "detailed" ? t("Measurement Schedule — Detailed") : t("Measurement Schedule")), w - M_RIGHT, 12, { align: "right" });
     doc.line(M_LEFT, h - 11, w - M_RIGHT, h - 11);
     f.font(false, 7, MUTED);
-    doc.text(`PlanMeasure AI · extraction v${EXTRACTION_VERSION} · generated ${generated} from the current reviewed data`, M_LEFT, h - 7);
-    doc.text(`Page ${i} of ${n}`, w - M_RIGHT, h - 7, { align: "right" });
+    doc.text(pdfSafe(t("PlanMeasure AI · extraction v{v} · generated {g} from the current reviewed data", { v: EXTRACTION_VERSION, g: generated })), M_LEFT, h - 7);
+    doc.text(pdfSafe(t("Page {i} of {n}", { i, n })), w - M_RIGHT, h - 7, { align: "right" });
   }
   return new Uint8Array(doc.output("arraybuffer"));
 }
 
 function detailBlock(f: Flow, o: OpeningRow, unit: string, img: CropImage | null): void {
-  const typeLabel = OPENING_TYPE_LABELS[o.type] ?? o.type;
+  const typeLabel = tx(OPENING_TYPE_LABELS[o.type] ?? o.type);
   const heading: Run[] = [
-    { text: `${o.tag || "Untagged"} — ${typeLabel}  `, bold: true },
+    { text: `${o.tag || t("Untagged")} — ${typeLabel}  `, bold: true },
     { text: o.ref, size: 8, color: MUTED },
   ];
   const [status] = statusText(o.verified, o.status);
   const facts: [string, string][] = [
-    ["Width", measurementDetail(o.width, unit)],
-    ["Height", measurementDetail(o.height, unit)],
-    ["Quantity", `${o.quantity ?? 0}` + (o.quantity_basis ? ` (${o.quantity_basis.replace(/_/g, " ")})` : "")],
-    ["Source page", o.page_index !== null ? `${o.drawing_reference || "—"} (page ${o.page_index + 1})` : "—"],
-    ["Status", status],
-    ["Confidence", `${Math.round((o.confidence?.overall ?? 0) * 100)}%`],
+    [t("Width"), measurementDetail(o.width, unit)],
+    [t("Height"), measurementDetail(o.height, unit)],
+    [t("Quantity"), `${o.quantity ?? 0}` + (o.quantity_basis ? ` (${t(o.quantity_basis.replace(/_/g, " "))})` : "")],
+    [t("Source page"), o.page_index !== null ? `${o.drawing_reference || "—"} (${t("page {n}", { n: o.page_index + 1 })})` : "—"],
+    [t("Status"), status],
+    [t("Confidence"), `${Math.round((o.confidence?.overall ?? 0) * 100)}%`],
   ];
-  if (o.notes) facts.push(["Notes", o.notes]);
-  const open = !o.verified ? (o.flags ?? []).filter((x) => x.severity === "warning" || x.severity === "error").map((x) => x.message) : [];
-  if (open.length) facts.push(["Open issues", open.slice(0, 4).join("; ")]);
+  if (o.notes) facts.push([t("Notes"), o.notes]);
+  const open = !o.verified ? (o.flags ?? []).filter((x) => x.severity === "warning" || x.severity === "error").map((x) => tx(x.message)) : [];
+  if (open.length) facts.push([t("Open issues"), open.slice(0, 4).join("; ")]);
 
   let iw = 0;
   let ih = 0;

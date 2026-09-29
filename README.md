@@ -33,6 +33,13 @@ Actions**.
 Double-clicking a `.planmeasure` file opens it in the desktop app; the
 installers register the file type.
 
+**Languages: English, French, Spanish.** The app starts in the device's
+language and can be switched on the welcome screen or under Settings; the
+choice is remembered. Everything follows it — screens, review flags and
+evidence, the history, the measurement schedule, PDF exports and the desktop
+menu. Text quoted from the drawings (tags, sheet names, dimension text) is
+kept exactly as drawn.
+
 ## How it works
 
 1. **Add drawings** to a project. Files are checked (type sniffing, size / page
@@ -95,6 +102,8 @@ app/
                      Web Worker, edits / verification / audit trail, schedule,
                      PDF reports (jsPDF) and project files (.planmeasure zip)
   src/pages, src/components   React 18 screens
+  src/i18n/          English / French / Spanish: interface dictionaries and
+                     templates for the engine's messages
   electron/          desktop shell (Electron 26, app:// protocol, file associations)
   e2e/               Playwright tests of the built app in Chromium
   benchmark/         ground-truth drawing sets and scans for the accuracy benchmark

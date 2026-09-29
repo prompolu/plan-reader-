@@ -14,6 +14,8 @@ import { enqueueJob, jobOut } from "./processing";
 import { imageUrl, revokeImage } from "./images";
 import { validateUpload, UploadError } from "./uploads";
 import { buildReport } from "./report";
+import { locAuditMessage, locLabels, locOpening, locReviewItem, locSchedule } from "./localize";
+import { tx } from "../i18n";
 import { engine } from "./engineClient";
 import { getProfile, setProfile } from "./profile";
 import { APP_VERSION, deleteProjectData, openProjectFile, ProjectFileError, saveProjectFile, type OpenMode } from "./projectData";
@@ -146,9 +148,9 @@ async function pageOut(p: PageRow, doc: DocumentRow | undefined) {
     page_type: type,
     page_type_detected: p.page_type,
     page_type_override: p.page_type_override,
-    page_type_label: PAGE_TYPE_LABELS[type ?? ""] ?? "Not analysed",
+    page_type_label: tx(PAGE_TYPE_LABELS[type ?? ""] ?? "Not analysed"),
     classification_confidence: cls.confidence ?? null,
-    classification_signals: cls.signals ?? [],
+    classification_signals: ((cls.signals ?? []) as { detail?: string }[]).map((sg) => ({ ...sg, detail: tx(sg.detail) })),
     secondary_types: cls.secondary_types ?? [],
     sheet_number: p.sheet_number,
     sheet_title: p.sheet_title,
@@ -171,7 +173,12 @@ async function getOpening(pid: string, oid: string, includeDeleted = false): Pro
 }
 
 function auditOut(e: AuditRow) {
-  return { id: e.id, opening_id: e.opening_id, opening_ref: e.opening_ref, actor: e.actor, user: e.user, action: e.action, field: e.field, old_value: e.old_value, new_value: e.new_value, message: e.message, created_at: e.created_at };
+  return { id: e.id, opening_id: e.opening_id, opening_ref: e.opening_ref, actor: e.actor, user: e.user, action: e.action, field: e.field, old_value: e.old_value, new_value: e.new_value, message: locAuditMessage(e.message), created_at: e.created_at };
+}
+
+/** An opening as the screens receive it (labels and messages in the current language). */
+function openingOut(o: OpeningRow) {
+  return locOpening(svc.toDict(o));
 }
 
 /** Run an opening mutation, persisting the opening and its audit events together. */
@@ -188,7 +195,7 @@ async function mutateOpening(pid: string, oid: string, fn: (p: ProjectRow, o: Op
   await (await db()).put("openings", o);
   await writeAudit(pid, events);
   await touch(p);
-  return svc.toDict(o);
+  return openingOut(o);
 }
 
 // ---------------------------------------------------------------------------
@@ -231,8 +238,8 @@ route("GET", "/api/system", async () => ({
   ocr: { provider: "tesseract.js", available: true, version: "5" },
   vision: { provider: "none", model: null, configured: false, used_for: "ambiguous page classification and dimension associations only; it can only pick among values read from the drawing" },
   limits: { max_upload_mb: 200, max_pages_per_document: 300, max_files_per_upload: 20 },
-  opening_types: OPENING_TYPE_LABELS,
-  page_types: PAGE_TYPE_LABELS,
+  opening_types: locLabels(OPENING_TYPE_LABELS),
+  page_types: locLabels(PAGE_TYPE_LABELS),
   storage: "device",
 }));
 
@@ -601,7 +608,7 @@ route("GET", "/api/projects/:pid/search", async (m, q) => {
 route("GET", "/api/projects/:pid/openings", async (m, q) => {
   const pid = m.groups!.pid;
   const all = q.get("include_deleted") === "true" ? await byProject("openings", pid) : await activeOpenings(pid);
-  return all.map(svc.toDict);
+  return all.map(openingOut);
 });
 
 route("POST", "/api/projects/:pid/openings", async (m, _q, body) => {
@@ -619,7 +626,7 @@ route("POST", "/api/projects/:pid/openings", async (m, _q, body) => {
   await (await db()).put("openings", o);
   await writeAudit(p.id, events);
   await touch(p);
-  return svc.toDict(o);
+  return openingOut(o);
 });
 
 route("PATCH", "/api/projects/:pid/openings/:oid", async (m, _q, body) => {
@@ -683,7 +690,7 @@ route("GET", "/api/projects/:pid/openings/:oid/audit", async (m) => {
 });
 
 route("GET", "/api/projects/:pid/review", async (m) => {
-  const items = svc.reviewItems(await activeOpenings(m.groups!.pid));
+  const items = svc.reviewItems(await activeOpenings(m.groups!.pid)).map(locReviewItem);
   return { count: new Set(items.map((i) => i.opening_id)).size, items };
 });
 
@@ -696,7 +703,7 @@ route("GET", "/api/projects/:pid/schedule", async (m, q) => {
   const unit = q.get("unit") ?? "mm";
   if (!(GROUP_BY as readonly string[]).includes(groupBy)) throw new ApiError(422, `group_by must be one of ${GROUP_BY.join(", ")}`);
   if (!UNITS.includes(unit)) throw new ApiError(422, "unknown unit");
-  return buildSchedule(await activeOpenings(m.groups!.pid), groupBy, unit, q.get("include_unverified") !== "false");
+  return locSchedule(buildSchedule(await activeOpenings(m.groups!.pid), groupBy, unit, q.get("include_unverified") !== "false"));
 });
 
 route("POST", "/api/projects/:pid/export/pdf", async (m, _q, body) => {
@@ -725,7 +732,7 @@ route("POST", "/api/projects/:pid/export/pdf", async (m, _q, body) => {
   const blob = await buildReport({
     projectName: p.name,
     info,
-    schedule: sched,
+    schedule: locSchedule(sched),
     openings: included,
     pages,
     kind: b.kind as "summary" | "detailed",

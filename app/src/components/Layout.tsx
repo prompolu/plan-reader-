@@ -4,6 +4,7 @@ import { ChevronsUpDown, ClipboardCheck, FolderOpen, LayoutDashboard, Plus, Rule
 import { useProjects } from "../hooks/data";
 import { NewProjectModal } from "../pages/Dashboard";
 import { DesktopFileBridge } from "./ProjectFile";
+import { t } from "../i18n";
 
 const LAST_PROJECT = "pm:lastProject";
 
@@ -45,7 +46,7 @@ export default function Layout() {
       <main className="main">
         <Outlet />
       </main>
-      <nav className="dock" aria-label="Main">
+      <nav className="dock" aria-label={t("Main navigation")}>
         <div className="brand" onClick={() => nav("/")} onKeyDown={(e) => e.key === "Enter" && nav("/")} role="link" tabIndex={0}>
           <span className="logo">
             <Ruler size={15} />
@@ -56,36 +57,36 @@ export default function Layout() {
         </div>
         <span className="dock-sep" />
         <div className="dock-nav">
-          <NavLink to="/" end title="Dashboard">
-            <LayoutDashboard size={16} /> <span className="lbl">Dashboard</span>
+          <NavLink to="/" end title={t("Dashboard")}>
+            <LayoutDashboard size={16} /> <span className="lbl">{t("Dashboard")}</span>
           </NavLink>
-          <NavLink to="/projects" title="Projects">
-            <FolderOpen size={16} /> <span className="lbl">Projects</span>
+          <NavLink to="/projects" title={t("Projects")}>
+            <FolderOpen size={16} /> <span className="lbl">{t("Projects")}</span>
           </NavLink>
-          <NavLink to={pnav("upload")} title="Upload Plans">
-            <Upload size={16} /> <span className="lbl">Upload</span>
+          <NavLink to={pnav("upload")} title={t("Upload Plans")}>
+            <Upload size={16} /> <span className="lbl">{t("Upload")}</span>
           </NavLink>
-          <NavLink to={pnav("extraction")} title="Extraction">
-            <ScanSearch size={16} /> <span className="lbl">Extraction</span>
+          <NavLink to={pnav("extraction")} title={t("Extraction")}>
+            <ScanSearch size={16} /> <span className="lbl">{t("Extraction")}</span>
           </NavLink>
-          <NavLink to={pnav("review")} title="Review">
-            <ClipboardCheck size={16} /> <span className="lbl">Review</span>
+          <NavLink to={pnav("review")} title={t("Review")}>
+            <ClipboardCheck size={16} /> <span className="lbl">{t("Review")}</span>
             {review > 0 && <span className="count">{review}</span>}
           </NavLink>
-          <NavLink to={pnav("measurements")} title="Measurements">
-            <Ruler size={16} /> <span className="lbl">Measurements</span>
+          <NavLink to={pnav("measurements")} title={t("Measurements")}>
+            <Ruler size={16} /> <span className="lbl">{t("Measurements")}</span>
           </NavLink>
-          <NavLink to="/settings" state={{ from: loc.pathname }} title="Settings">
-            <Settings size={16} /> <span className="lbl">Settings</span>
+          <NavLink to="/settings" state={{ from: loc.pathname }} title={t("Settings")}>
+            <Settings size={16} /> <span className="lbl">{t("Settings")}</span>
           </NavLink>
         </div>
         <div className="dock-right">
-          <button className="dock-project" onClick={() => nav("/projects")} title={currentProject ? `Current project: ${currentProject.name}` : "Choose a project"}>
-            <span>{currentProject ? currentProject.name : "No project selected"}</span>
+          <button className="dock-project" onClick={() => nav("/projects")} title={currentProject ? t("Current project: {name}", { name: currentProject.name }) : t("Choose a project")}>
+            <span>{currentProject ? currentProject.name : t("No project selected")}</span>
             <ChevronsUpDown size={14} />
           </button>
           <button className="dock-add" onClick={() => setCreating(true)}>
-            <span>New project</span>
+            <span>{t("New project")}</span>
             <i>
               <Plus size={17} />
             </i>

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { api } from "../api/client";
 import type { User } from "../api/types";
 import { recoverJobs } from "../local/processing";
+import { t } from "../i18n";
 
 interface WorkspaceState {
   user: User | null;
@@ -33,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       setUser(null);
       const msg = (e as Error).message;
-      setError(/indexeddb|database|storage/i.test(msg) ? "This browser does not allow the app to store data on this device (private browsing?). Open it in a normal window." : msg);
+      setError(/indexeddb|database|storage/i.test(msg) ? t("This browser does not allow the app to store data on this device (private browsing?). Open it in a normal window.") : msg);
     } finally {
       setLoading(false);
     }

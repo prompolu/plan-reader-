@@ -6,6 +6,7 @@ import { api, uploadWithProgress } from "../api/client";
 import type { DocumentInfo, Job } from "../api/types";
 import { qk, useDocuments, useJobs, useProject, useSystem } from "../hooks/data";
 import { fmtBytes, fmtDate, ProgressBar, StepList, useToast } from "../components/ui";
+import { t, tp, tx } from "../i18n";
 
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg";
 
@@ -47,8 +48,8 @@ export default function Upload() {
     for (const f of Array.from(files)) {
       const ext = f.name.toLowerCase().split(".").pop() ?? "";
       let error: string | undefined;
-      if (!["pdf", "png", "jpg", "jpeg"].includes(ext)) error = "Unsupported type – PDF, PNG or JPG only";
-      else if (f.size > maxMb * 1024 * 1024) error = `Larger than ${maxMb} MB`;
+      if (!["pdf", "png", "jpg", "jpeg"].includes(ext)) error = t("Unsupported type – PDF, PNG or JPG only");
+      else if (f.size > maxMb * 1024 * 1024) error = t("Larger than {n} MB", { n: maxMb });
       next.push({ file: f, error });
     }
     setPending((p) => [...p, ...next]);
@@ -65,7 +66,7 @@ export default function Upload() {
       const r = await uploadWithProgress<{ documents: DocumentInfo[]; errors: { filename: string; error: string }[]; job: Job | null }>(`/api/projects/${pid}/documents`, form, setUploading);
       setRejected(r.errors);
       setPending([]);
-      toast(`${r.documents.length} file(s) uploaded – processing started`);
+      toast(t("{n} file(s) added – processing started", { n: r.documents.length }));
       qc.invalidateQueries({ queryKey: qk.documents(pid!) });
       qc.invalidateQueries({ queryKey: qk.jobs(pid!) });
     } catch (e) {
@@ -81,14 +82,14 @@ export default function Upload() {
     try {
       await api(`/api/projects/${pid}/process`, { method: "POST" });
       qc.invalidateQueries({ queryKey: qk.jobs(pid!) });
-      toast("Re-extraction queued – your edits and verifications are preserved");
+      toast(t("Re-extraction queued – your edits and verifications are preserved"));
     } catch (e) {
       toast((e as Error).message, "error");
     }
   };
 
   const removeDoc = async (d: DocumentInfo) => {
-    if (!confirm(`Remove ${d.filename}? Its pages will be removed; openings you edited are kept.`)) return;
+    if (!confirm(t("Remove {name}? Its pages will be removed; openings you edited are kept.", { name: d.filename }))) return;
     await api(`/api/projects/${pid}/documents/${d.id}`, { method: "DELETE" });
     qc.invalidateQueries({ queryKey: qk.documents(pid!) });
     qc.invalidateQueries({ queryKey: qk.pages(pid!) });
@@ -98,12 +99,12 @@ export default function Upload() {
     <div className="page">
       <div className="page-head">
         <div>
-          <h1>Upload Plans</h1>
-          <p className="muted">{project.data?.name} — PDF drawing sets (single or multi-page) or scanned images (PNG, JPG). Files stay on this device – nothing is uploaded to a server.</p>
+          <h1>{t("Upload Plans")}</h1>
+          <p className="muted">{project.data?.name} — {t("PDF drawing sets (single or multi-page) or scanned images (PNG, JPG). Files stay on this device – nothing is uploaded to a server.")}</p>
         </div>
         {docs.data && docs.data.length > 0 && canEdit && (
           <button className="btn" onClick={reprocess} disabled={!!active}>
-            <RefreshCw size={15} /> Re-extract all
+            <RefreshCw size={15} /> {t("Re-extract all")}
           </button>
         )}
       </div>
@@ -129,15 +130,15 @@ export default function Upload() {
             >
               <UploadCloud size={36} />
               <div>
-                <b>Drop drawings here</b> or click to choose files
+                <b>{t("Drop drawings here")}</b> {t("or click to choose files")}
               </div>
-              <div className="small muted">PDF, PNG, JPG · up to {maxMb} MB each · multiple files allowed</div>
+              <div className="small muted">{t("PDF, PNG, JPG · up to {n} MB each · multiple files allowed", { n: maxMb })}</div>
               <input ref={inputRef} type="file" multiple accept={ACCEPT} hidden onChange={(e) => e.target.files && add(e.target.files)} data-testid="file-input" />
             </div>
           )}
           {pending.length > 0 && (
             <div className="card">
-              <h3>Ready to upload</h3>
+              <h3>{t("Ready to upload")}</h3>
               <ul className="file-list">
                 {pending.map((p, i) => (
                   <li key={i} className={p.error ? "bad" : ""}>
@@ -145,7 +146,7 @@ export default function Upload() {
                     <span className="grow">{p.file.name}</span>
                     <span className="muted small">{fmtBytes(p.file.size)}</span>
                     {p.error && <span className="error-text small">{p.error}</span>}
-                    <button className="icon-btn" onClick={() => setPending((x) => x.filter((_, j) => j !== i))} aria-label="Remove">
+                    <button className="icon-btn" onClick={() => setPending((x) => x.filter((_, j) => j !== i))} aria-label={t("Remove")}>
                       <Trash2 size={14} />
                     </button>
                   </li>
@@ -153,31 +154,31 @@ export default function Upload() {
               </ul>
               {uploading !== null ? (
                 <div>
-                  <div className="small">Uploading… {Math.round(uploading * 100)}%</div>
+                  <div className="small">{t("Reading files…")} {Math.round(uploading * 100)}%</div>
                   <ProgressBar value={uploading} />
                 </div>
               ) : (
                 <button className="btn btn-primary" onClick={start} disabled={!pending.some((p) => !p.error)}>
-                  <UploadCloud size={15} /> Upload and analyse
+                  <UploadCloud size={15} /> {t("Upload and analyse")}
                 </button>
               )}
             </div>
           )}
           {rejected.length > 0 && (
             <div className="banner banner-error">
-              <b>Some files were not accepted:</b>
+              <b>{t("Some files were not accepted:")}</b>
               <ul>
                 {rejected.map((r, i) => (
                   <li key={i}>
-                    {r.filename}: {r.error}
+                    {r.filename}: {tx(r.error)}
                   </li>
                 ))}
               </ul>
             </div>
           )}
           <div className="card">
-            <h3>Drawings in this project</h3>
-            {docs.data && docs.data.length === 0 && <div className="muted">No drawings uploaded yet.</div>}
+            <h3>{t("Drawings in this project")}</h3>
+            {docs.data && docs.data.length === 0 && <div className="muted">{t("No drawings uploaded yet.")}</div>}
             <ul className="file-list">
               {(docs.data ?? []).map((d) => (
                 <li key={d.id}>
@@ -185,12 +186,12 @@ export default function Upload() {
                   <span className="grow">
                     <b>{d.filename}</b>
                     <div className="small muted">
-                      {fmtBytes(d.size_bytes)} · {d.page_count} page{d.page_count === 1 ? "" : "s"} · uploaded {fmtDate(d.created_at)}
+                      {fmtBytes(d.size_bytes)} · {tp(d.page_count, "{n} page", "{n} pages")} · {t("uploaded {date}", { date: fmtDate(d.created_at) })}
                     </div>
                   </span>
-                  <span className={`badge ${d.status === "processed" ? "badge-green" : d.status === "failed" ? "badge-red" : "badge-gray"}`}>{d.status}</span>
+                  <span className={`badge ${d.status === "processed" ? "badge-green" : d.status === "failed" ? "badge-red" : "badge-gray"}`}>{t(d.status)}</span>
                   {canEdit && (
-                    <button className="icon-btn" onClick={() => removeDoc(d)} aria-label={`Remove ${d.filename}`}>
+                    <button className="icon-btn" onClick={() => removeDoc(d)} aria-label={t("Remove {name}", { name: d.filename })}>
                       <Trash2 size={14} />
                     </button>
                   )}
@@ -200,12 +201,12 @@ export default function Upload() {
           </div>
         </div>
         <div className="card processing">
-          <h3>Processing</h3>
-          {!job && <div className="muted">Upload drawings to start the analysis.</div>}
+          <h3>{t("Processing")}</h3>
+          {!job && <div className="muted">{t("Upload drawings to start the analysis.")}</div>}
           {job && (
             <>
               <div className="row between">
-                <span className={`badge ${job.status === "succeeded" ? "badge-green" : job.status === "failed" ? "badge-red" : "badge-blue"}`}>{job.status}</span>
+                <span className={`badge ${job.status === "succeeded" ? "badge-green" : job.status === "failed" ? "badge-red" : "badge-blue"}`}>{t(job.status)}</span>
                 <span className="small muted">{Math.round(job.progress * 100)}%</span>
               </div>
               <ProgressBar value={job.progress} />
@@ -217,8 +218,8 @@ export default function Upload() {
               )}
               {job.status === "succeeded" && (
                 <div className="banner banner-ok">
-                  <CheckCircle2 size={14} /> Extraction complete.{" "}
-                  <Link to={`/p/${pid}/extraction`}>Open the extraction workspace →</Link>
+                  <CheckCircle2 size={14} /> {t("Extraction complete.")}{" "}
+                  <Link to={`/p/${pid}/extraction`}>{t("Open the extraction workspace →")}</Link>
                 </div>
               )}
             </>

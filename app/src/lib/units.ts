@@ -1,4 +1,5 @@
 import type { DisplayUnit, Measurement } from "../api/types";
+import { num, t } from "../i18n";
 
 /** Presentation only: the stored millimetre value is never changed by the display unit. */
 export function formatFtIn(mm: number, denominator = 16): string {
@@ -35,9 +36,9 @@ export function formatLength(mm: number | null | undefined, unit: DisplayUnit, o
   if (unit === "original" && original) return original;
   switch (unit) {
     case "cm":
-      return trim(mm / 10, 1) + (withUnit ? " cm" : "");
+      return num(trim(mm / 10, 1)) + (withUnit ? " cm" : "");
     case "m":
-      return trim(mm / 1000, 3) + (withUnit ? " m" : "");
+      return num(trim(mm / 1000, 3)) + (withUnit ? " m" : "");
     case "ft_in":
       return formatFtIn(mm);
     default:
@@ -46,14 +47,17 @@ export function formatLength(mm: number | null | undefined, unit: DisplayUnit, o
 }
 
 export function measurementText(m: Measurement | null, unit: DisplayUnit): string {
-  if (!m) return "Needs review";
-  if (m.status === "conflict") return "Conflict";
-  const t = formatLength(m.value, unit, m.original_text);
-  return m.status === "inferred" ? `${t}*` : t;
+  if (!m) return t("Needs review");
+  if (m.status === "conflict") return t("Conflict");
+  const txt = formatLength(m.value, unit, m.original_text);
+  return m.status === "inferred" ? `${txt}*` : txt;
 }
 
+// getters: labels follow the current language
 export const UNIT_LABELS: Record<DisplayUnit, string> = {
-  original: "Original",
+  get original() {
+    return t("Original");
+  },
   mm: "mm",
   cm: "cm",
   m: "m",
@@ -61,10 +65,22 @@ export const UNIT_LABELS: Record<DisplayUnit, string> = {
 };
 
 export const SOURCE_LABELS: Record<string, string> = {
-  explicit_dimension: "Dimension on drawing",
-  callout: "Size callout",
-  schedule: "Schedule",
-  drawing_scale: "Inferred from drawing scale",
-  user: "Entered by user",
-  conflict: "Conflicting sources",
+  get explicit_dimension() {
+    return t("Dimension on drawing");
+  },
+  get callout() {
+    return t("Size callout");
+  },
+  get schedule() {
+    return t("Schedule");
+  },
+  get drawing_scale() {
+    return t("Inferred from drawing scale");
+  },
+  get user() {
+    return t("Entered by user");
+  },
+  get conflict() {
+    return t("Conflicting sources");
+  },
 };

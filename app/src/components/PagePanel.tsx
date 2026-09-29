@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import type { PageInfo } from "../api/types";
 import { qk, useSystem } from "../hooks/data";
 import { useToast } from "./ui";
+import { t, tx } from "../i18n";
 
 /** Page classification + drawing scale (detected vs manual) for the current page. */
 export default function PagePanel({ projectId, page, canEdit }: { projectId: string; page: PageInfo; canEdit: boolean }) {
@@ -33,33 +34,33 @@ export default function PagePanel({ projectId, page, canEdit }: { projectId: str
   const reextract = async () => {
     await api(`/api/projects/${projectId}/process`, { method: "POST" });
     qc.invalidateQueries({ queryKey: qk.jobs(projectId) });
-    toast("Re-extraction queued – follow progress on Upload Plans");
+    toast(t("Re-extraction queued – follow progress on Upload Plans"));
     setDirty(false);
   };
 
   const applyManual = () => {
     const v = manual.trim();
     const text = /^\d+(\.\d+)?$/.test(v) ? `1:${v}` : v;
-    patch({ scale_override: text }, `Manual scale ${text} saved`);
+    patch({ scale_override: text }, t("Manual scale {s} saved", { s: text }));
   };
 
   return (
     <div className="tab-body page-panel">
       <h4>
-        Page {page.page} · {page.sheet_number ?? "no sheet number"}
+        {t("Page {n}", { n: page.page })} · {page.sheet_number ?? t("no sheet number")}
       </h4>
       <div className="small muted">
-        {page.document} · page {page.page_in_document}
+        {page.document} · {t("page {n}", { n: page.page_in_document })}
         {page.sheet_title ? ` · ${page.sheet_title}` : ""}
       </div>
       <dl className="kv">
-        <dt>Page type</dt>
+        <dt>{t("Page type")}</dt>
         <dd>
           {canEdit ? (
             <select
               value={page.page_type_override ?? page.page_type ?? "other"}
-              onChange={(e) => patch({ page_type_override: e.target.value }, "Page type updated")}
-              aria-label="Page type"
+              onChange={(e) => patch({ page_type_override: e.target.value }, t("Page type updated"))}
+              aria-label={t("Page type")}
             >
               {Object.entries(system.data?.page_types ?? {}).map(([k, v]) => (
                 <option key={k} value={k}>
@@ -71,81 +72,82 @@ export default function PagePanel({ projectId, page, canEdit }: { projectId: str
             page.page_type_label
           )}
           <div className="small muted">
-            {page.page_type_override ? "Set by you" : `Detected${page.classification_confidence !== null ? ` · ${Math.round((page.classification_confidence ?? 0) * 100)}%` : ""}`}
+            {page.page_type_override ? t("Set by you") : t("Detected") + (page.classification_confidence !== null ? ` · ${Math.round((page.classification_confidence ?? 0) * 100)}%` : "")}
             {page.page_type_override && canEdit && (
               <>
                 {" · "}
-                <button className="linkish" onClick={() => patch({ clear_page_type: true }, "Using detected page type")}>
-                  use detected ({page.page_type_detected})
+                <button className="linkish" onClick={() => patch({ clear_page_type: true }, t("Using detected page type"))}>
+                  {t("use detected ({type})", { type: system.data?.page_types[page.page_type_detected ?? ""] ?? page.page_type_detected ?? "" })}
                 </button>
               </>
             )}
           </div>
         </dd>
-        <dt>Floor</dt>
+        <dt>{t("Floor")}</dt>
         <dd>{page.floor ?? "—"}</dd>
-        <dt>Detected scale</dt>
+        <dt>{t("Detected scale")}</dt>
         <dd>
           {primary?.text ? (
             <>
-              <b>{primary.text}</b> <span className="small muted">({primary.source}, {Math.round((primary.confidence ?? 0) * 100)}%)</span>
+              <b>{primary.text}</b> <span className="small muted">({tx(primary.source)}, {Math.round((primary.confidence ?? 0) * 100)}%)</span>
               {primary.notes?.map((n, i) => (
                 <div key={i} className="small muted">
-                  {n}
+                  {tx(n)}
                 </div>
               ))}
             </>
           ) : (
-            <span className="muted">{primary?.not_to_scale ? "Not to scale (NTS)" : "None detected"}</span>
+            <span className="muted">{primary?.not_to_scale ? t("Not to scale (NTS)") : t("None detected")}</span>
           )}
           {page.scale_override && canEdit && (
             <div>
-              <button className="btn btn-sm" onClick={() => patch({ scale_override: "" }, "Using detected scale")}>
-                Use detected scale
+              <button className="btn btn-sm" onClick={() => patch({ scale_override: "" }, t("Using detected scale"))}>
+                {t("Use detected scale")}
               </button>
             </div>
           )}
         </dd>
-        <dt>Manual scale</dt>
+        <dt>{t("Manual scale")}</dt>
         <dd>
           {canEdit ? (
             <div className="row gap scale-input">
               <span>1 :</span>
-              <input value={manual} onChange={(e) => setManual(e.target.value)} placeholder={`100 or 1/4" = 1'-0"`} aria-label="Manual scale" />
+              <input value={manual} onChange={(e) => setManual(e.target.value)} placeholder={t("{a} or {b}", { a: "100", b: `1/4" = 1'-0"` })} aria-label={t("Manual scale")} />
               <button className="btn btn-sm" onClick={applyManual} disabled={!manual.trim()}>
-                Apply
+                {t("Apply")}
               </button>
             </div>
           ) : (
             page.scale_override?.text ?? "—"
           )}
-          <div className="small muted">Scale is only used when no explicit dimension exists; such values are marked “inferred”.</div>
+          <div className="small muted">{t("Scale is only used when no explicit dimension exists; such values are marked “inferred”.")}</div>
         </dd>
         {page.quality?.kind && page.quality.kind !== "vector" && (
           <>
-            <dt>Source</dt>
+            <dt>{t("Source")}</dt>
             <dd>
-              Raster image{page.quality.effective_dpi ? ` · ~${Math.round(page.quality.effective_dpi)} dpi` : ""}
-              {page.quality.poor && <div className="error-text small">Low quality: {page.quality.reasons?.join(", ")}</div>}
+              {t("Raster image")}
+              {page.quality.effective_dpi ? ` · ~${Math.round(page.quality.effective_dpi)} dpi` : ""}
+              {page.quality.poor && <div className="error-text small">{t("Low quality: {reasons}", { reasons: (page.quality.reasons ?? []).map((r) => tx(r)).join(", ") })}</div>}
             </dd>
           </>
         )}
       </dl>
       {dirty && canEdit && (
         <div className="banner banner-info">
-          Changes apply on the next extraction.{" "}
+          {t("Changes apply on the next extraction.")}{" "}
           <button className="btn btn-sm btn-primary" onClick={reextract}>
-            Re-extract now
+            {t("Re-extract now")}
           </button>
         </div>
       )}
       <div className="section">
-        <h4>Why this page type</h4>
+        <h4>{t("Why this page type")}</h4>
         <ul className="ev-list">
           {page.classification_signals.slice(0, 8).map((s, i) => (
             <li key={i} className="ev ev-info">
               <span className="small">
-                {s.detail} <span className="muted">→ {system.data?.page_types[s.type] ?? s.type}</span>
+                {tx(s.detail)} <span className="muted">→ {system.data?.page_types[s.type] ?? s.type}</span>
               </span>
             </li>
           ))}

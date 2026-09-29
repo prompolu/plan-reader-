@@ -7,6 +7,7 @@ import { Empty, useToast } from "../components/ui";
 import { useOpeningMutation, useReview, useSystem } from "../hooks/data";
 import { useWorkspace } from "../hooks/workspace";
 import { UnitSwitch } from "./Extraction";
+import { t, tp } from "../i18n";
 
 export default function Review() {
   const { pid } = useParams();
@@ -55,7 +56,7 @@ export default function Review() {
       { id: cur, path: "/verify", method: "POST", body: { verified: true } },
       {
         onSuccess: () => {
-          toast(`${ws.selected?.tag || ws.selected?.ref} verified`);
+          toast(t("{name} verified", { name: ws.selected?.tag || ws.selected?.ref || "" }));
           if (nextId && nextId !== cur) ws.select(nextId);
           else ws.select(null);
         },
@@ -70,32 +71,32 @@ export default function Review() {
     <div className="workspace">
       <div className="ws-head">
         <div>
-          <h2>Needs review — {queue.length} item{queue.length === 1 ? "" : "s"}</h2>
+          <h2>{t("Needs review")} — {tp(queue.length, "{n} item", "{n} items")}</h2>
           <span className="muted small">
             {Object.entries(counts)
               .map(([k, v]) => `${v} × ${k}`)
-              .join(" · ") || "Nothing flagged"}
+              .join(" · ") || t("Nothing flagged")}
           </span>
         </div>
         <div className="row gap">
           <UnitSwitch unit={ws.unit} onChange={ws.setUnit} />
           <button className="btn btn-sm" onClick={() => go(-1)} disabled={queue.length < 2}>
-            <ChevronLeft size={14} /> Previous
+            <ChevronLeft size={14} /> {t("Previous")}
           </button>
           <button className="btn btn-sm" onClick={() => go(1)} disabled={queue.length < 2}>
-            Skip <ChevronRight size={14} />
+            {t("Skip")} <ChevronRight size={14} />
           </button>
           {ws.canEdit && (
             <button className="btn btn-sm btn-primary" onClick={verifyNext} disabled={!ws.selected || pos < 0}>
-              <CheckCircle2 size={14} /> Verify & next
+              <CheckCircle2 size={14} /> {t("Verify & next")}
             </button>
           )}
         </div>
       </div>
       {review.isSuccess && queue.length === 0 ? (
         <div className="page">
-          <Empty icon={<PartyPopper size={36} />} title="Nothing needs review">
-            <p className="muted">Every flagged opening has been verified or resolved.</p>
+          <Empty icon={<PartyPopper size={36} />} title={t("Nothing needs review")}>
+            <p className="muted">{t("Every flagged opening has been verified or resolved.")}</p>
           </Empty>
         </div>
       ) : (
@@ -151,7 +152,7 @@ export default function Review() {
                 openingTypes={system.data?.opening_types ?? {}}
               />
             ) : (
-              <div className="tab-body muted">Select an item from the queue.</div>
+              <div className="tab-body muted">{t("Select an item from the queue.")}</div>
             )}
           </aside>
         </div>

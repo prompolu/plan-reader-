@@ -125,3 +125,43 @@ test("projects are private to the browser profile they were created in", async (
   await expect(stranger.getByText("No projects yet")).toBeVisible();
   await other.close();
 });
+
+test("switches the whole app to French and Spanish", async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto("/");
+  await expect(page.getByText("No projects yet")).toBeVisible();
+
+  // first run: pick French on the welcome screen
+  await page.getByRole("button", { name: "Français" }).click();
+  await expect(page.getByText("Aucun projet pour l'instant")).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("lang", "fr");
+  await page.getByRole("button", { name: /Essayer le projet de démonstration/ }).click();
+  await expect(page.getByText("Extraction terminée.")).toBeVisible({ timeout: 180_000 });
+  await expect(page.getByText("Tableau des portes")).toHaveCount(0); // step list uses engine step names
+  await expect(page.getByText("Pages analysées")).toBeVisible();
+
+  await page.getByText("Ouvrir l'espace d'extraction").click();
+  const row = page.locator(".otable tbody tr", { hasText: "W-03" }).first();
+  await expect(row).toContainText("Fenêtre");
+  await expect(row).toContainText("Conflit");
+  await row.click();
+  await expect(page.locator(".details")).toContainText("Les sources divergent");
+  await page.locator(".details").getByRole("button", { name: "Preuves" }).click();
+  await expect(page.locator(".details")).toContainText("Repère W-03 détecté");
+
+  // the choice is remembered; switch to Spanish in Settings
+  await page.reload();
+  await expect(page.getByRole("link", { name: /Paramètres/ })).toBeVisible();
+  await page.getByRole("link", { name: /Paramètres/ }).click();
+  await page.getByRole("button", { name: "Español" }).click();
+  await expect(page.getByRole("heading", { name: "Ajustes", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: /Medidas/ }).click();
+  await expect(page.getByText("CUADRO DE VENTANAS")).toBeVisible();
+  await expect(page.locator(".sched-table").first()).toContainText("Por revisar");
+
+  // back to English
+  await page.getByRole("link", { name: /Ajustes/ }).click();
+  await page.getByRole("button", { name: "English" }).click();
+  await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});

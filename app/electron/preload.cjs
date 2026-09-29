@@ -15,4 +15,8 @@ contextBridge.exposeInMainWorld("planmeasureDesktop", {
   chooseProjectFile() {
     ipcRenderer.send("pm:choose-file");
   },
+  /** Menu labels follow the language chosen in the app. */
+  setLanguage(lang) {
+    ipcRenderer.send("pm:language", String(lang));
+  },
 });

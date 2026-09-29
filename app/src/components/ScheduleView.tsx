@@ -1,4 +1,5 @@
 import type { Schedule } from "../api/types";
+import { t } from "../i18n";
 
 export default function ScheduleView({ schedule, showNotes = true, showStatus = true }: { schedule: Schedule; showNotes?: boolean; showStatus?: boolean }) {
   return (
@@ -20,15 +21,15 @@ export default function ScheduleView({ schedule, showNotes = true, showStatus = 
             </colgroup>
             <thead>
               <tr>
-                <th>Tag</th>
-                <th>Type</th>
-                <th className="r">Width</th>
-                <th className="r">Height</th>
-                <th className="r">Qty</th>
-                <th>Drawing ref</th>
-                <th>Floor</th>
-                {showStatus && <th>Status</th>}
-                {showNotes && <th>Notes</th>}
+                <th>{t("Tag")}</th>
+                <th>{t("Type")}</th>
+                <th className="r">{t("Width")}</th>
+                <th className="r">{t("Height")}</th>
+                <th className="r">{t("Qty")}</th>
+                <th>{t("Drawing ref")}</th>
+                <th>{t("Floor")}</th>
+                {showStatus && <th>{t("Status")}</th>}
+                {showNotes && <th>{t("Notes")}</th>}
               </tr>
             </thead>
             <tbody>
@@ -41,7 +42,7 @@ export default function ScheduleView({ schedule, showNotes = true, showStatus = 
                   <td className="r b">{r.quantity}</td>
                   <td className="wrap">{r.drawing_reference}</td>
                   <td className="wrap">{r.floor}</td>
-                  {showStatus && <td className={r.verified ? "t-ok" : r.status === "needs_review" ? "t-warn" : "muted"}>{r.verified ? "Verified" : r.status === "needs_review" ? "Needs review" : "Unverified"}</td>}
+                  {showStatus && <td className={r.verified ? "t-ok" : r.status === "needs_review" ? "t-warn" : "muted"}>{r.verified ? t("Verified") : r.status === "needs_review" ? t("Needs review") : t("Unverified")}</td>}
                   {showNotes && <td className="small wrap">{r.notes}</td>}
                 </tr>
               ))}
@@ -49,7 +50,7 @@ export default function ScheduleView({ schedule, showNotes = true, showStatus = 
             <tfoot>
               <tr>
                 <td colSpan={4} className="r muted">
-                  Total
+                  {t("Total")}
                 </td>
                 <td className="r b">{g.total_quantity}</td>
                 <td colSpan={2 + (showStatus ? 1 : 0) + (showNotes ? 1 : 0)} />
@@ -58,7 +59,7 @@ export default function ScheduleView({ schedule, showNotes = true, showStatus = 
           </table>
         </section>
       ))}
-      {schedule.has_inferred && <p className="small muted">* Inferred from the drawing scale – not an explicitly dimensioned value.</p>}
+      {schedule.has_inferred && <p className="small muted">* {t("Inferred from the drawing scale – not an explicitly dimensioned value.")}</p>}
     </div>
   );
 }

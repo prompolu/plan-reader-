@@ -4,6 +4,7 @@ import { ArrowLeft, Printer } from "lucide-react";
 import type { DisplayUnit } from "../api/types";
 import ScheduleView from "../components/ScheduleView";
 import { useProject, useSchedule } from "../hooks/data";
+import { locale, t, tp } from "../i18n";
 
 /** Printer-friendly measurement schedule (browser print, @page size/orientation). */
 export default function PrintView() {
@@ -25,7 +26,7 @@ export default function PrintView() {
     const pageSize = size === "LETTER" ? "letter" : size;
     el.textContent = `@page { size: ${pageSize} ${orientation}; margin: 14mm 12mm; }`;
     document.head.appendChild(el);
-    document.title = `${info.project_name || project.data?.name || "Project"} – Measurement schedule`;
+    document.title = `${info.project_name || project.data?.name || t("Project")} – ${t("Measurement schedule")}`;
     return () => el.remove();
   }, [size, orientation, info.project_name, project.data?.name]);
 
@@ -39,39 +40,39 @@ export default function PrintView() {
     <div className={`print-page ${orientation}`}>
       <div className="print-toolbar no-print">
         <button className="btn" onClick={() => (window.history.length > 1 ? nav(-1) : nav(`/p/${pid}/measurements`))}>
-          <ArrowLeft size={15} /> Back
+          <ArrowLeft size={15} /> {t("Back")}
         </button>
-        <select value={size} onChange={(e) => upd("size", e.target.value)} aria-label="Paper size">
+        <select value={size} onChange={(e) => upd("size", e.target.value)} aria-label={t("Paper size")}>
           <option value="A4">A4</option>
           <option value="A3">A3</option>
-          <option value="LETTER">Letter</option>
+          <option value="LETTER">{t("Letter")}</option>
         </select>
-        <select value={orientation} onChange={(e) => upd("orientation", e.target.value)} aria-label="Orientation">
-          <option value="portrait">Portrait</option>
-          <option value="landscape">Landscape</option>
+        <select value={orientation} onChange={(e) => upd("orientation", e.target.value)} aria-label={t("Orientation")}>
+          <option value="portrait">{t("Portrait")}</option>
+          <option value="landscape">{t("Landscape")}</option>
         </select>
-        <select value={group} onChange={(e) => upd("group", e.target.value)} aria-label="Group by">
-          <option value="type">Group by type</option>
-          <option value="tag">By tag</option>
-          <option value="size">By size</option>
-          <option value="page">By page</option>
-          <option value="floor">By floor</option>
+        <select value={group} onChange={(e) => upd("group", e.target.value)} aria-label={t("Group by")}>
+          <option value="type">{t("Group by type")}</option>
+          <option value="tag">{t("By tag")}</option>
+          <option value="size">{t("By size")}</option>
+          <option value="page">{t("By page")}</option>
+          <option value="floor">{t("By floor")}</option>
         </select>
-        <select value={unit} onChange={(e) => upd("unit", e.target.value)} aria-label="Unit">
+        <select value={unit} onChange={(e) => upd("unit", e.target.value)} aria-label={t("Unit")}>
           <option value="mm">mm</option>
           <option value="cm">cm</option>
           <option value="m">m</option>
           <option value="ft_in">ft-in</option>
-          <option value="original">Original notation</option>
+          <option value="original">{t("Original notation")}</option>
         </select>
         <label className="check">
-          <input type="checkbox" checked={notes} onChange={(e) => setNotes(e.target.checked)} /> Notes
+          <input type="checkbox" checked={notes} onChange={(e) => setNotes(e.target.checked)} /> {t("Notes")}
         </label>
         <label className="check">
-          <input type="checkbox" checked={includeUnverified} onChange={(e) => setIncludeUnverified(e.target.checked)} /> Unverified items
+          <input type="checkbox" checked={includeUnverified} onChange={(e) => setIncludeUnverified(e.target.checked)} /> {t("Unverified items")}
         </label>
         <button className="btn btn-primary" onClick={() => window.print()}>
-          <Printer size={15} /> Print
+          <Printer size={15} /> {t("Print")}
         </button>
       </div>
       <div className={`print-sheet size-${size} ${orientation}`}>
@@ -81,7 +82,7 @@ export default function PrintView() {
             <div>{info.drawing_set_name}</div>
           </div>
           <div className="r">
-            <div>Measurement Schedule</div>
+            <div>{t("Measurement Schedule")}</div>
             <div>{info.date || new Date().toISOString().slice(0, 10)}</div>
           </div>
         </header>
@@ -89,19 +90,19 @@ export default function PrintView() {
           <tbody>
             {info.project_address && (
               <tr>
-                <th>Project address</th>
+                <th>{t("Project address")}</th>
                 <td>{info.project_address}</td>
               </tr>
             )}
             {info.prepared_by && (
               <tr>
-                <th>Prepared by</th>
+                <th>{t("Prepared by")}</th>
                 <td>{info.prepared_by}</td>
               </tr>
             )}
             {notes && info.notes && (
               <tr>
-                <th>Notes</th>
+                <th>{t("Notes")}</th>
                 <td className="pre">{info.notes}</td>
               </tr>
             )}
@@ -110,13 +111,13 @@ export default function PrintView() {
         {sched.data && (
           <>
             <p className="small">
-              {sched.data.total_openings} openings. Dimensions in {unit === "ft_in" ? "feet and inches" : unit === "original" ? "original drawing notation" : unit}.
-              {sched.data.unverified_count > 0 && ` ${sched.data.unverified_count} item(s) not yet verified.`}
+              {tp(sched.data.total_openings, "{n} opening.", "{n} openings.")} {t("Dimensions in {unit}.", { unit: unit === "ft_in" ? t("feet and inches") : unit === "original" ? t("original drawing notation") : unit })}
+              {sched.data.unverified_count > 0 && ` ${t("{n} item(s) not yet verified.", { n: sched.data.unverified_count })}`}
             </p>
             <ScheduleView schedule={sched.data} showNotes={notes} />
           </>
         )}
-        <footer className="print-footer small">Generated by PlanMeasure AI from the current reviewed data · {new Date().toLocaleString()}</footer>
+        <footer className="print-footer small">{t("Generated by PlanMeasure AI from the current reviewed data")} · {new Date().toLocaleString(locale())}</footer>
       </div>
     </div>
   );
