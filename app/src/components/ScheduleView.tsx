@@ -35,25 +35,44 @@ export default function ScheduleView({ schedule, showNotes = true, showStatus = 
             <tbody>
               {g.rows.map((r) => (
                 <tr key={`${r.id}-${r.drawing_reference}`}>
-                  <td className="b">{r.tag}</td>
-                  <td>{r.type_label}</td>
-                  <td className={`r ${r.width_status === "conflict" ? "t-conflict wrap" : r.width_status === "missing" ? "t-missing" : ""}`}>{r.width}</td>
-                  <td className={`r ${r.height_status === "conflict" ? "t-conflict wrap" : r.height_status === "missing" ? "t-missing" : ""}`}>{r.height}</td>
-                  <td className="r b">{r.quantity}</td>
-                  <td className="wrap">{r.drawing_reference}</td>
-                  <td className="wrap">{r.floor}</td>
-                  {showStatus && <td className={r.verified ? "t-ok" : r.status === "needs_review" ? "t-warn" : "muted"}>{r.verified ? t("Verified") : r.status === "needs_review" ? t("Needs review") : t("Unverified")}</td>}
-                  {showNotes && <td className="small wrap">{r.notes}</td>}
+                  {/* s-* classes and data-label: on phones each row is laid out as a block with labelled values */}
+                  <td className="b s-tag">{r.tag}</td>
+                  <td className="s-type">{r.type_label}</td>
+                  <td data-label={t("Width")} className={`r s-w ${r.width_status === "conflict" ? "t-conflict wrap" : r.width_status === "missing" ? "t-missing" : ""}`}>
+                    {r.width}
+                  </td>
+                  <td data-label={t("Height")} className={`r s-h ${r.height_status === "conflict" ? "t-conflict wrap" : r.height_status === "missing" ? "t-missing" : ""}`}>
+                    {r.height}
+                  </td>
+                  <td data-label={t("Qty")} className="r b s-qty">
+                    {r.quantity}
+                  </td>
+                  <td data-label={t("Drawing ref")} className="wrap s-ref">
+                    {r.drawing_reference}
+                  </td>
+                  <td data-label={t("Floor")} className="wrap s-floor">
+                    {r.floor}
+                  </td>
+                  {showStatus && (
+                    <td className={`s-status ${r.verified ? "t-ok" : r.status === "needs_review" ? "t-warn" : "muted"}`}>
+                      {r.verified ? t("Verified") : r.status === "needs_review" ? t("Needs review") : t("Unverified")}
+                    </td>
+                  )}
+                  {showNotes && (
+                    <td data-label={t("Notes")} className="small wrap s-notes">
+                      {r.notes}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={4} className="r muted">
+                <td colSpan={4} className="r muted s-total">
                   {t("Total")}
                 </td>
-                <td className="r b">{g.total_quantity}</td>
-                <td colSpan={2 + (showStatus ? 1 : 0) + (showNotes ? 1 : 0)} />
+                <td className="r b s-qty">{g.total_quantity}</td>
+                <td className="s-rest" colSpan={2 + (showStatus ? 1 : 0) + (showNotes ? 1 : 0)} />
               </tr>
             </tfoot>
           </table>

@@ -59,6 +59,22 @@ body::before {
 #root {
   position: relative;
   z-index: 1;
+  /* iPhone Home Screen app: the page starts below the clock and battery */
+  padding-top: env(safe-area-inset-top);
+}
+body::after {
+  /* ... and scrolls under a frosted strip there instead of under the clock */
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top);
+  background: rgba(236, 216, 190, 0.78);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  z-index: 90;
+  pointer-events: none;
 }
 h1,
 h2,
@@ -2569,6 +2585,114 @@ details.gen-section[open] > summary {
   }
   .workspace {
     height: auto;
+  }
+}
+
+/* phones: each schedule row becomes a block - tag, type and status; width, height
+   and quantity; drawing references; floor; notes - instead of 9 squeezed columns */
+@media screen and (max-width: 640px) {
+  .sched-table,
+  .sched-table tbody,
+  .sched-table tfoot {
+    display: block;
+    width: 100%;
+  }
+  .sched-table colgroup,
+  .sched-table thead {
+    display: none;
+  }
+  .sched-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 7.5em;
+    grid-template-areas:
+      "tag type status"
+      "w h qty"
+      "ref ref ref"
+      "floor floor floor"
+      "notes notes notes";
+    column-gap: 12px;
+    row-gap: 3px;
+    padding: 11px 2px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .sched-table td {
+    display: block;
+    padding: 0;
+    border: 0;
+    white-space: normal;
+    overflow-wrap: break-word;
+    text-align: left;
+    min-width: 0;
+  }
+  .sched-table td[data-label]::before {
+    content: attr(data-label);
+    margin-right: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .sched-table td.r {
+    text-align: left;
+  }
+  /* width, height, quantity: small label above the value */
+  .sched-table td.s-w::before,
+  .sched-table td.s-h::before,
+  .sched-table td.s-qty::before {
+    display: block;
+    margin: 0;
+  }
+  .sched-table td:empty {
+    display: none;
+  }
+  .sched-table .s-tag {
+    grid-area: tag;
+    font-size: 14px;
+  }
+  .sched-table .s-type {
+    grid-area: type;
+  }
+  .sched-table .s-status {
+    grid-area: status;
+    text-align: right;
+  }
+  .sched-table .s-w {
+    grid-area: w;
+  }
+  .sched-table .s-h {
+    grid-area: h;
+  }
+  .sched-table td.s-qty {
+    grid-area: qty;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .sched-table .s-ref {
+    grid-area: ref;
+  }
+  .sched-table .s-floor {
+    grid-area: floor;
+  }
+  .sched-table .s-notes {
+    grid-area: notes;
+  }
+  .sched-table tfoot tr {
+    grid-template-areas: "total total qty";
+    border-bottom: 0;
+    border-top: 1.5px solid var(--ink);
+  }
+  .sched-table tfoot td {
+    border: 0;
+  }
+  .sched-table tfoot .s-total {
+    grid-area: total;
+  }
+  .sched-table tfoot .s-qty::before {
+    content: none;
+  }
+  .sched-table tfoot .s-rest {
+    display: none;
   }
 }
 
