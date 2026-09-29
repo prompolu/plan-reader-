@@ -16,7 +16,7 @@ import { createTesseractBackend } from "../src/engine/tesseract";
 const args = process.argv.slice(2);
 const jsonAt = args.indexOf("--json");
 const jsonOut = jsonAt >= 0 ? args[jsonAt + 1] : null;
-const files = args.filter((a, i) => a !== "--json" && i !== jsonAt + 1);
+const files = args.filter((_, i) => jsonAt < 0 || (i !== jsonAt && i !== jsonAt + 1));
 if (!files.length) {
   console.error("usage: npx tsx scripts/analyze-drawing.ts <file> [...] [--json out.json]");
   process.exit(1);
