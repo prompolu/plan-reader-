@@ -56,22 +56,41 @@ const MIME = {
 // app:// behaves like https: fetch, workers, WASM and IndexedDB all work
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
 
-/** Serve a file from the app bundle (never outside it). */
-function serve(request) {
-  const url = new URL(request.url);
-  if (url.host !== HOST) return new Response("Not found", { status: 404 });
+/** A file from the app bundle (never outside it): { status, type, data }. */
+function resolveFile(requestUrl) {
+  const notFound = { status: 404, type: "text/plain", data: Buffer.from("Not found") };
+  const url = new URL(requestUrl);
+  if (url.host !== HOST) return notFound;
   let rel = decodeURIComponent(url.pathname);
   if (rel === "/" || rel === "") rel = "/index.html";
   const file = path.normalize(path.join(DIST, rel));
-  if (!file.startsWith(DIST + path.sep)) return new Response("Not found", { status: 404 });
-  let data;
+  if (!file.startsWith(DIST + path.sep)) return notFound;
   try {
-    data = fs.readFileSync(file);
+    return { status: 200, type: MIME[path.extname(file).toLowerCase()] || "application/octet-stream", data: fs.readFileSync(file) };
   } catch {
-    return new Response("Not found", { status: 404 });
+    return notFound;
   }
-  const type = MIME[path.extname(file).toLowerCase()] || "application/octet-stream";
-  return new Response(data, { status: 200, headers: { "content-type": type, "content-security-policy": CSP, "x-content-type-options": "nosniff", "cache-control": "no-cache" } });
+}
+
+const HEADERS = { "content-security-policy": CSP, "x-content-type-options": "nosniff", "cache-control": "no-cache" };
+
+/**
+ * Serve app:// from the bundle. protocol.handle exists from Electron 25; the
+ * Windows 7 build runs on Electron 22 (the last one for Windows 7), which has
+ * registerBufferProtocol instead.
+ */
+function registerAppScheme() {
+  if (typeof protocol.handle === "function") {
+    protocol.handle(SCHEME, (request) => {
+      const f = resolveFile(request.url);
+      return new Response(f.data, { status: f.status, headers: { ...HEADERS, "content-type": f.type } });
+    });
+  } else {
+    protocol.registerBufferProtocol(SCHEME, (request, callback) => {
+      const f = resolveFile(request.url);
+      callback({ statusCode: f.status, mimeType: f.type.split(";")[0], charset: f.type.includes("charset") ? "utf-8" : undefined, headers: HEADERS, data: f.data });
+    });
+  }
 }
 
 // -------------------------------------------------------------------------
@@ -132,7 +151,14 @@ function machineIdentity() {
       const id = /"IOPlatformUUID"\s*=\s*"([^"]+)"/.exec(out)?.[1];
       if (id) return (identity = `mac:${id}`);
     } else if (process.platform === "win32") {
-      const out = execFileSync("reg", ["query", "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography", "/v", "MachineGuid", "/reg:64"], { encoding: "utf8", windowsHide: true });
+      const key = ["query", "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography", "/v", "MachineGuid"];
+      let out;
+      try {
+        out = execFileSync("reg", [...key, "/reg:64"], { encoding: "utf8", windowsHide: true });
+      } catch {
+        // 32-bit Windows (7) has a single registry view
+        out = execFileSync("reg", key, { encoding: "utf8", windowsHide: true });
+      }
       const id = /MachineGuid\s+REG_SZ\s+(\S+)/.exec(out)?.[1];
       if (id) return (identity = `win:${id}`);
     } else {
@@ -269,7 +295,7 @@ if (!app.requestSingleInstanceLock()) {
   if (initial) pendingFiles.push(initial);
 
   app.whenReady().then(() => {
-    protocol.handle(SCHEME, serve);
+    registerAppScheme();
     // the app needs no camera, microphone, location or notifications
     session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === "clipboard-sanitized-write"));
     session.defaultSession.on("will-download", (_e, item) => {

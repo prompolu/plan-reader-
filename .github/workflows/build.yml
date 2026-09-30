@@ -69,6 +69,11 @@ jobs:
             target: --win
             artifact: PlanMeasure-AI-Windows
             files: app/release/*.exe
+          # Windows 7 / 8 / 8.1: Electron 22, 64-bit and 32-bit in one installer
+          - os: windows-latest
+            target: --win -c build/win7.config.cjs
+            artifact: PlanMeasure-AI-Windows7
+            files: app/release/*.exe
           - os: macos-latest
             target: --mac
             artifact: PlanMeasure-AI-macOS

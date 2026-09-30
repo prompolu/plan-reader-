@@ -81,7 +81,14 @@ export function browserPlatform(assetBase: string): Platform {
     standardFontDataUrl: `${assetBase}pdfjs/standard_fonts/`,
     createCanvas: (w, h) => new OffscreenCanvas(Math.max(1, w), Math.max(1, h)) as never,
     async decodeImage(bytes) {
-      const bmp = await createImageBitmap(new Blob([bytes as BlobPart]), { imageOrientation: "from-image" } as ImageBitmapOptions);
+      const blob = new Blob([bytes as BlobPart]);
+      let bmp: ImageBitmap;
+      try {
+        bmp = await createImageBitmap(blob, { imageOrientation: "from-image" } as ImageBitmapOptions);
+      } catch {
+        // "from-image" exists from Chrome 111; older engines (the Windows 7 app) apply the photo's orientation by default
+        bmp = await createImageBitmap(blob);
+      }
       const c = new OffscreenCanvas(bmp.width, bmp.height);
       const ctx = c.getContext("2d", { willReadFrequently: true })!;
       ctx.drawImage(bmp, 0, 0);

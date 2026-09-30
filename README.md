@@ -22,7 +22,8 @@ run → Artifacts**):
 
 | Download | Install |
 |---|---|
-| **PlanMeasure-AI-Windows** → `PlanMeasure-AI-Setup-2.0.0.exe` | Run it. Windows SmartScreen may warn about an unsigned app: *More info → Run anyway*. |
+| **PlanMeasure-AI-Windows** → `PlanMeasure-AI-Setup-2.0.0.exe` (Windows 10 / 11) | Run it. Windows SmartScreen may warn about an unsigned app: *More info → Run anyway*. |
+| **PlanMeasure-AI-Windows7** → `PlanMeasure-AI-Setup-2.0.0-Windows7.exe` (Windows 7 SP1 / 8 / 8.1, 64- and 32-bit) | Same app on Electron 22, the last version that runs on Windows 7. Electron 22 no longer receives security updates: use it only on machines that cannot run Windows 10 / 11. |
 | **PlanMeasure-AI-macOS** → `PlanMeasure-AI-2.0.0-mac.dmg` (Apple silicon and Intel, macOS 10.13+) | Open the dmg and drag the app to Applications. The first time, right-click the app → *Open* (it is not notarised). |
 | **iPhone / iPad** | Open `https://<owner>.github.io/<repo>/` in Safari → Share → *Add to Home Screen*. After the first visit it works offline. |
 
@@ -161,6 +162,7 @@ npm run check:keys   # after `npm run build`: vendor key in, test key out
 npm run desktop      # build and start the desktop app
 npm run dist:win     # Windows installer (on Windows)  → app/release/
 npm run dist:mac     # macOS dmg (on a Mac)             → app/release/
+npm run dist:win7    # Windows 7 installer (on Windows) → app/release/
 ```
 
 ## Accuracy
@@ -180,5 +182,7 @@ truth to measure that.
   glazing lines, tag bubbles); unusual drafting standards need review.
 * The installers are not code-signed, so Windows and macOS show a warning the
   first time.
+* The Windows 7 app runs on Electron 22, which is no longer updated by its
+  makers; the regular installer needs Windows 10 or 11.
 * PDF exports use the standard PDF fonts: characters outside Western European
   alphabets are replaced with `?`.

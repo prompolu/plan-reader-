@@ -18,7 +18,8 @@
     "desktop": "npm run build && electron .",
     "check:keys": "node scripts/check-licence-keys.mjs",
     "dist:win": "npm run build && npm run check:keys && electron-builder --win --publish never",
-    "dist:mac": "npm run build && npm run check:keys && electron-builder --mac --publish never"
+    "dist:mac": "npm run build && npm run check:keys && electron-builder --mac --publish never",
+    "dist:win7": "npm run build && npm run check:keys && electron-builder --win -c build/win7.config.cjs --publish never"
   },
   "devDependencies": {
     "@fontsource-variable/manrope": "^5.3.0",
