@@ -2480,6 +2480,46 @@ details.gen-section[open] > summary {
 .gen-table {
   overflow-x: auto;
 }
+/* ---------------------------------------------------------------- download page */
+.download .activation-card {
+  max-width: 600px;
+}
+.dl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dl-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--r-inner);
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background 0.15s, transform 0.1s;
+}
+.dl-option:hover {
+  background: rgba(255, 255, 255, 0.88);
+}
+.dl-option:active {
+  transform: translateY(1px);
+}
+.dl-option > span {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.dl-option small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.dl-arrow {
+  color: var(--muted);
+}
 .license-banner {
   width: calc(100% - 64px);
   max-width: 1436px;

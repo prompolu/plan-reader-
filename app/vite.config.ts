@@ -66,7 +66,16 @@ function offlineApp(): Plugin {
 
 const SW_BODY = `
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
+  // some hosts serve pages at clean addresses (generator.html -> /generator): keep a copy
+  // under both, without the redirect (a redirected response cannot answer a page load)
+  const put = (c, url) =>
+    fetch(url, { cache: "reload" }).then((r) => {
+      if (!r.ok) throw new Error("precache failed: " + url);
+      if (!r.redirected) return c.put(url, r);
+      const clean = new Response(r.body, { status: r.status, statusText: r.statusText, headers: r.headers });
+      return Promise.all([c.put(url, clean.clone()), c.put(r.url, clean)]);
+    });
+  e.waitUntil(caches.open(VERSION).then((c) => Promise.all(PRECACHE.map((u) => put(c, u)))).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", (e) => {
   e.waitUntil(
@@ -115,6 +124,8 @@ export default defineConfig({
         main: fileURLToPath(new URL("./index.html", import.meta.url)),
         // the vendor's activation-code generator (no secret inside: the key stays on its devices)
         generator: fileURLToPath(new URL("./generator.html", import.meta.url)),
+        // the public download page for clients (installers on the vendor's download storage)
+        download: fileURLToPath(new URL("./download.html", import.meta.url)),
       },
     },
   },

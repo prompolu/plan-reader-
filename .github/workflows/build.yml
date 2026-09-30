@@ -41,10 +41,18 @@ jobs:
         run: npx tsx scripts/benchmark.ts benchmark/sets --out benchmark-report.md
       # the published web app: vendor licence key, no test key
       - run: npm run build
+        env:
+          # the download page links to the installers on the R2 bucket (Settings -> Variables)
+          VITE_DOWNLOADS_URL: ${{ vars.R2_PUBLIC_URL }}
       - run: npm run check:keys
       - uses: actions/upload-pages-artifact@v3
         with:
           path: app/dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-app
+          path: app/dist
+          retention-days: 7
       # the browser tests run a separate build that also accepts the test key
       # (e2e/license-helper.ts); it is never published
       - name: Browser tests (the built app in Chromium)
@@ -115,3 +123,86 @@ jobs:
     steps:
       - id: deploy
         uses: actions/deploy-pages@v4
+
+  # ---------------------------------------------------------------------------
+  # Cloudflare: the web app (iPhone, code generator, download page) on
+  # Cloudflare Pages and the latest installers on R2 under fixed names.
+  # Repository secrets CLOUDFLARE_API_TOKEN (Cloudflare Pages: Edit, Workers R2
+  # Storage: Edit) and CLOUDFLARE_ACCOUNT_ID; variables R2_PUBLIC_URL and,
+  # optionally, R2_BUCKET (default planmeasure) and CF_PAGES_PROJECT (default
+  # planmeasure). Skipped while the secrets are not set.
+  # ---------------------------------------------------------------------------
+
+  cloudflare-web:
+    if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PROJECT: ${{ vars.CF_PAGES_PROJECT || 'planmeasure' }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-app
+          path: web
+      - name: Publish to Cloudflare Pages
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::notice::Cloudflare secrets are not set: not published to Cloudflare"; exit 0
+          fi
+          npm install -g wrangler@4 >/dev/null
+          if ! out=$(wrangler pages project create "$PROJECT" --production-branch main 2>&1); then
+            echo "$out" | grep -qi "already exists" || { echo "$out"; exit 1; }
+          fi
+          wrangler pages deploy web --project-name "$PROJECT" --branch main --commit-hash "$GITHUB_SHA" --commit-dirty=true
+          wrangler pages project list | grep -i "$PROJECT" || true
+
+  cloudflare-downloads:
+    if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: desktop
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      BUCKET: ${{ vars.R2_BUCKET || 'planmeasure' }}
+      PUBLIC_URL: ${{ vars.R2_PUBLIC_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: PlanMeasure-AI-*
+          path: installers
+      - name: Publish the installers to R2 (fixed names, replaced by each version)
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::notice::Cloudflare secrets are not set: installers not published"; exit 0
+          fi
+          npm install -g wrangler@4 >/dev/null
+          version=$(node -p "require('./app/package.json').version")
+          put() {
+            local file="$1" key="$2" type="$3"
+            [ -f "$file" ] || { echo "::error::missing installer for $key"; exit 1; }
+            echo "$key <- $(basename "$file") ($(du -h "$file" | cut -f1))"
+            wrangler r2 object put "$BUCKET/$key" --file "$file" --content-type "$type" \
+              --content-disposition "attachment; filename=\"$(basename "$file")\"" --cache-control "no-cache" --remote
+          }
+          put "$(ls installers/PlanMeasure-AI-Windows/*.exe | head -1)" PlanMeasure-Windows.exe application/vnd.microsoft.portable-executable
+          put "$(ls installers/PlanMeasure-AI-Windows7/*.exe | head -1)" PlanMeasure-Windows7.exe application/vnd.microsoft.portable-executable
+          put "$(ls installers/PlanMeasure-AI-macOS/*.dmg | head -1)" PlanMeasure-Mac.dmg application/x-apple-diskimage
+          printf '{"version":"%s","date":"%s","commit":"%s","windows":"PlanMeasure-Windows.exe","windows7":"PlanMeasure-Windows7.exe","mac":"PlanMeasure-Mac.dmg"}\n' \
+            "$version" "$(date -u +%Y-%m-%d)" "$GITHUB_SHA" > latest.json
+          wrangler r2 object put "$BUCKET/latest.json" --file latest.json --content-type application/json --cache-control "no-cache" --remote
+          echo "::notice::Installers published: $PUBLIC_URL/PlanMeasure-Windows.exe, $PUBLIC_URL/PlanMeasure-Windows7.exe, $PUBLIC_URL/PlanMeasure-Mac.dmg"

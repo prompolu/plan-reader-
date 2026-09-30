@@ -668,6 +668,21 @@ const es: Record<string, string> = {
   "Secret key – keep it to yourself:": "Clave secreta – guárdela solo para usted:",
   "Show my secret key": "Mostrar mi clave secreta",
   Lock: "Bloquear",
+  // ---- download page ------------------------------------------------------------
+  "Download PlanMeasure AI": "Descargar PlanMeasure AI",
+  "Windows 10 and 11": "Windows 10 y 11",
+  "Apple silicon and Intel · macOS 10.13 or later": "Apple silicon e Intel · macOS 10.13 o posterior",
+  "Windows 7, 8 and 8.1 · 64-bit and 32-bit": "Windows 7, 8 y 8.1 · 64 bits y 32 bits",
+  "The installers are not published from this version.": "Los instaladores no se publican desde esta versión.",
+  "Open it in Safari, then Share → Add to Home Screen.": "Ábrala en Safari y luego Compartir → Añadir a pantalla de inicio.",
+  "First launch": "Primer inicio",
+  "Windows: if SmartScreen warns you, click “More info” → “Run anyway”.": "Windows: si SmartScreen le avisa, pulse «Más información» → «Ejecutar de todas formas».",
+  "Mac: open the file and drag PlanMeasure AI to Applications. The first time, right-click the app → “Open”.":
+    "Mac: abra el archivo y arrastre PlanMeasure AI a Aplicaciones. La primera vez, clic derecho en la aplicación → «Abrir».",
+  "The app then shows this device's code: send it to {vendor} to receive your activation code.":
+    "La aplicación muestra entonces el código de este aparato: envíelo a {vendor} para recibir su código de activación.",
+  "Hello, I would like an activation code for PlanMeasure AI.": "Hola, quisiera un código de activación para PlanMeasure AI.",
+  "Contact {vendor} on WhatsApp": "Contactar con {vendor} por WhatsApp",
 };
 
 export default es;

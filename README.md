@@ -17,8 +17,18 @@ phone.
 
 ## Getting the app
 
-Every push builds the app with GitHub Actions (**Actions → Build → the latest
-run → Artifacts**):
+**For clients:** the download page (`download.html` next to the web app) links
+to the latest installers, published to the Cloudflare R2 bucket under fixed
+names that each new version replaces: `PlanMeasure-Windows.exe`,
+`PlanMeasure-Windows7.exe`, `PlanMeasure-Mac.dmg` (and `latest.json`). The
+web app, the code generator and the download page are also published to
+Cloudflare Pages. This needs the repository secrets `CLOUDFLARE_API_TOKEN`
+(permissions *Cloudflare Pages: Edit* and *Workers R2 Storage: Edit*) and
+`CLOUDFLARE_ACCOUNT_ID`, and the variable `R2_PUBLIC_URL` (the bucket's public
+address); without them those steps are skipped.
+
+Every push also builds the app with GitHub Actions (**Actions → Build → the
+latest run → Artifacts**, signed-in GitHub account needed):
 
 | Download | Install |
 |---|---|
